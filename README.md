@@ -235,3 +235,4 @@ Log of all notification attempts:
 ## License
 
 MIT License - see [LICENSE](license.txt)
+
