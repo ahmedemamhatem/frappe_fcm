@@ -432,7 +432,7 @@ def register_device_token(
     )
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def register_user_fcm_token(
     token: str,
     user: Optional[str] = None,
@@ -458,14 +458,14 @@ def register_user_fcm_token(
         dict: Success status
     """
     if not token:
-        return {"success": False, "message": "Token is required"}
+        frappe.throw("Token is required")
 
     target_user = user or frappe.session.user
     if target_user == "Guest":
-        return {"success": False, "message": "Authentication required"}
+        frappe.throw("Authentication required")
 
     if not frappe.db.exists("User", target_user):
-        return {"success": False, "message": f"User {target_user} not found"}
+        frappe.throw(f"User {target_user} not found")
 
     # Generate device ID from token if not provided
     if not device_id:

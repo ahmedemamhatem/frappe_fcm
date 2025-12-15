@@ -380,7 +380,8 @@ public class MainActivity extends AppCompatActivity {
 
             conn.disconnect();
 
-            return responseCode == 200 && response.toString().contains("success");
+            // Check for "success": true in response (Frappe returns {"message": {"success": true, ...}})
+            return responseCode == 200 && response.toString().contains("\"success\": true");
 
         } catch (Exception e) {
             Log.e(TAG, "Register token error", e);
