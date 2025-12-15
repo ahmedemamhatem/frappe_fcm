@@ -18,21 +18,16 @@ frappe.ui.form.on("FCM Settings", {
 });
 
 function test_fcm_connection(frm) {
-    // Show freeze overlay
-    frappe.freeze(__("Testing FCM connection..."));
-
     frappe.call({
         method: "frappe_fcm.fcm.doctype.fcm_settings.fcm_settings.test_fcm_connection",
-        async: true,
+        freeze: true,
+        freeze_message: __("Testing FCM connection..."),
         callback: function(r) {
-            // Unfreeze
-            frappe.unfreeze();
-
             if (r && r.message) {
                 // Update the status display in the page
                 update_status_display(frm, r.message);
 
-                // Also show a brief message
+                // Also show a brief alert
                 if (r.message.success) {
                     frappe.show_alert({
                         message: __("Connection successful!"),
@@ -45,7 +40,6 @@ function test_fcm_connection(frm) {
                     }, 5);
                 }
             } else {
-                frappe.unfreeze();
                 update_status_display(frm, {
                     success: false,
                     message: __("No response from server")
@@ -53,7 +47,6 @@ function test_fcm_connection(frm) {
             }
         },
         error: function(r) {
-            frappe.unfreeze();
             update_status_display(frm, {
                 success: false,
                 message: __("Error testing connection. Please check your configuration.")
