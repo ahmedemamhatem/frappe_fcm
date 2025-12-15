@@ -610,3 +610,24 @@ def test_fcm_connection():
     """
     from frappe_fcm.fcm.doctype.fcm_settings.fcm_settings import test_fcm_connection as _test
     return _test()
+
+
+@frappe.whitelist(allow_guest=True)
+def validate_connection():
+    """
+    Validate that this Frappe site has frappe_fcm installed.
+    Used by mobile app during setup to verify the site URL.
+
+    Returns:
+        dict: Connection validation info
+    """
+    settings = get_fcm_settings()
+    fcm_enabled = settings.get("fcm_enabled") if settings else False
+
+    return {
+        "success": True,
+        "message": "Frappe FCM is installed",
+        "fcm_enabled": fcm_enabled,
+        "site": frappe.local.site,
+        "version": "1.0.0"
+    }

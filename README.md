@@ -118,30 +118,31 @@ POST /api/method/frappe_fcm.fcm.notification_service.send_push_to_user
 
 ## Mobile App Setup
 
-The `mobile_app` folder contains a ready-to-use Android app template.
+The `mobile_app` folder contains a ready-to-use Android app template. The app is **fully configurable** - users enter their Frappe site URL on first launch.
 
-### Quick Start
+### Quick Start (Pre-built APK)
 
-1. **Copy the mobile_app folder** to your development machine
+1. Download the APK from [Releases](https://github.com/ahmedemamhatem/frappe_fcm/releases)
+2. Install on your Android device
+3. On first launch, enter your Frappe site URL
+4. Log in to your Frappe account
+5. The app will automatically register for push notifications
 
-2. **Configure your site URL** in `app/src/main/java/io/frappe/fcm/Config.java`:
-   ```java
-   public static final String BASE_URL = "https://your-site.frappe.cloud";
-   ```
+### Building from Source
 
-3. **Add Firebase to your Android app**:
+1. **Add Firebase to your Android app**:
    - Go to Firebase Console > Project Settings > Add App > Android
-   - Enter your package name (default: `io.frappe.fcm`)
+   - Enter package name: `io.frappe.fcm`
    - Download `google-services.json`
    - Place it in `mobile_app/app/` folder
 
-4. **Customize the app** (optional):
+2. **Customize the app** (optional):
    - Change package name in `app/build.gradle`
    - Update app name in `res/values/strings.xml`
    - Change colors in `res/values/colors.xml`
    - Replace app icon in `res/mipmap-*/` folders
 
-5. **Build the APK**:
+3. **Build the APK**:
    ```bash
    cd mobile_app
    ./gradlew assembleRelease
@@ -150,6 +151,7 @@ The `mobile_app` folder contains a ready-to-use Android app template.
 
 ### Android App Features
 
+- **Configurable Site URL** - Users enter their site on first launch
 - WebView-based app displaying your Frappe site
 - Automatic FCM token registration on user login
 - Push notification handling with deep linking
@@ -157,6 +159,7 @@ The `mobile_app` folder contains a ready-to-use Android app template.
 - Pull-to-refresh
 - File upload support
 - External link handling
+- Settings menu to change site
 
 ## DocTypes
 
@@ -232,16 +235,3 @@ Log of all notification attempts:
 ## License
 
 MIT License - see [LICENSE](license.txt)
-
-## Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
-
-## Support
-
-- Issues: [GitHub Issues](https://github.com/frappe/frappe_fcm/issues)
-- Discussions: [GitHub Discussions](https://github.com/frappe/frappe_fcm/discussions)

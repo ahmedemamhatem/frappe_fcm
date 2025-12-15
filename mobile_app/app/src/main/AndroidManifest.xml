@@ -25,29 +25,24 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
 
+        <!-- Setup Activity (First Launch) -->
+        <activity
+            android:name=".SetupActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FrappeFCM">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.FrappeFCM.Splash">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <!-- Deep linking - TODO: Update with your domain -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <!-- TODO: Change to your site domain -->
-                <data android:scheme="https"
-                    android:host="your-site.frappe.cloud" />
-                <data android:scheme="http"
-                    android:host="your-site.frappe.cloud" />
-            </intent-filter>
+            android:theme="@style/Theme.FrappeFCM">
         </activity>
 
         <!-- Firebase Messaging Service -->

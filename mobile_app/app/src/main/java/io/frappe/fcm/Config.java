@@ -1,43 +1,30 @@
 /*
  * Frappe FCM - Configuration
  *
- * ========================================
- * IMPORTANT: Configure these values before building!
- * ========================================
+ * This config holds default values. The actual site URL
+ * is configured by the user in the app's setup screen.
  */
 
 package io.frappe.fcm;
 
 public class Config {
-    /*
-     * ========================================
-     * REQUIRED CONFIGURATION
-     * ========================================
+    /**
+     * Default Frappe site URL (can be changed by user in setup screen)
+     * Leave empty to force user to configure on first launch
      */
+    public static final String DEFAULT_SITE_URL = "";
 
     /**
-     * Your Frappe/ERPNext site URL (without trailing slash)
-     *
-     * Examples:
-     * - "https://your-site.frappe.cloud"
-     * - "https://erp.yourcompany.com"
-     * - "http://localhost:8000" (for development)
+     * API endpoint path for registering FCM tokens
      */
-    public static final String BASE_URL = "https://your-site.frappe.cloud";
+    public static final String TOKEN_REGISTER_PATH =
+            "/api/method/frappe_fcm.fcm.notification_service.register_user_fcm_token";
 
     /**
-     * API endpoint for registering FCM tokens
-     * This should work with the default frappe_fcm installation.
-     * Only change if you've customized the API.
+     * API endpoint path for validating site connection
      */
-    public static final String TOKEN_REGISTER_API =
-            BASE_URL + "/api/method/frappe_fcm.fcm.notification_service.register_user_fcm_token";
-
-    /*
-     * ========================================
-     * OPTIONAL CONFIGURATION
-     * ========================================
-     */
+    public static final String VALIDATE_PATH =
+            "/api/method/frappe_fcm.fcm.notification_service.validate_connection";
 
     /**
      * Notification channel ID (must match FCM Settings in Frappe)
@@ -57,5 +44,12 @@ public class Config {
     /**
      * Enable debug logging
      */
-    public static final boolean DEBUG = false;
+    public static final boolean DEBUG = true;
+
+    /**
+     * SharedPreferences keys
+     */
+    public static final String PREF_NAME = "frappe_fcm_prefs";
+    public static final String PREF_SITE_URL = "site_url";
+    public static final String PREF_CONFIGURED = "is_configured";
 }

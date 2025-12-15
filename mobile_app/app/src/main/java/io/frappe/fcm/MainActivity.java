@@ -12,6 +12,7 @@ import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -20,6 +21,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
@@ -36,6 +39,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -63,6 +67,9 @@ public class MainActivity extends AppCompatActivity {
     private String fcmToken;
     private String currentUser;
     private boolean tokenRegistered = false;
+
+    // Site URL from SharedPreferences
+    private String siteUrl;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -105,10 +112,26 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Check if configured
+        SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
+        if (!prefs.getBoolean(Config.PREF_CONFIGURED, false)) {
+            // Not configured, go to setup
+            startSetupActivity();
+            return;
+        }
+
+        // Get site URL from preferences
+        siteUrl = prefs.getString(Config.PREF_SITE_URL, "");
+        if (siteUrl.isEmpty()) {
+            startSetupActivity();
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
         Log.d(TAG, "onCreate - Frappe FCM App");
-        Log.d(TAG, "Target URL: " + Config.BASE_URL);
+        Log.d(TAG, "Target URL: " + siteUrl);
 
         // Initialize views
         webView = findViewById(R.id.webView);
@@ -135,11 +158,18 @@ public class MainActivity extends AppCompatActivity {
         getFCMToken();
 
         // Load URL
-        Log.d(TAG, "Loading URL: " + Config.BASE_URL);
-        webView.loadUrl(Config.BASE_URL);
+        Log.d(TAG, "Loading URL: " + siteUrl);
+        webView.loadUrl(siteUrl);
 
         // Handle deep link / notification click
         handleIntent(getIntent());
+    }
+
+    private void startSetupActivity() {
+        Intent intent = new Intent(this, SetupActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     @Override
@@ -166,6 +196,58 @@ public class MainActivity extends AppCompatActivity {
                 webView.loadUrl(url);
             }
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_refresh) {
+            webView.reload();
+            return true;
+        } else if (id == R.id.action_settings) {
+            showSettingsDialog();
+            return true;
+        } else if (id == R.id.action_change_site) {
+            confirmChangeSite();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void showSettingsDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("App Settings")
+                .setMessage("Current Site: " + siteUrl + "\n\nFCM Token: " + (fcmToken != null ? fcmToken.substring(0, 20) + "..." : "Not available"))
+                .setPositiveButton("OK", null)
+                .setNeutralButton("Change Site", (d, w) -> confirmChangeSite())
+                .show();
+    }
+
+    private void confirmChangeSite() {
+        new AlertDialog.Builder(this)
+                .setTitle("Change Site")
+                .setMessage("Are you sure you want to change the Frappe site? You will need to reconfigure the app.")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    // Clear preferences
+                    SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
+                    prefs.edit().clear().apply();
+
+                    // Clear WebView data
+                    webView.clearCache(true);
+                    webView.clearHistory();
+                    CookieManager.getInstance().removeAllCookies(null);
+
+                    // Go to setup
+                    startSetupActivity();
+                })
+                .setNegativeButton("No", null)
+                .show();
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -260,7 +342,7 @@ public class MainActivity extends AppCompatActivity {
                 String url = request.getUrl().toString();
 
                 // Open external links in browser
-                if (!url.startsWith(Config.BASE_URL)) {
+                if (!url.startsWith(siteUrl)) {
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                     startActivity(intent);
                     return true;
@@ -389,14 +471,14 @@ public class MainActivity extends AppCompatActivity {
     private void registerTokenForUser(String token, String user) {
         executor.execute(() -> {
             try {
-                URL url = new URL(Config.TOKEN_REGISTER_API);
+                URL url = new URL(siteUrl + Config.TOKEN_REGISTER_PATH);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.setDoOutput(true);
 
                 // Send cookies for authentication
-                String cookies = CookieManager.getInstance().getCookie(Config.BASE_URL);
+                String cookies = CookieManager.getInstance().getCookie(siteUrl);
                 if (cookies != null) {
                     conn.setRequestProperty("Cookie", cookies);
                 }
