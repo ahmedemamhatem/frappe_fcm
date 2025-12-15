@@ -382,7 +382,22 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private int detectionAttempts = 0;
+    private static final int MAX_DETECTION_ATTEMPTS = 10;
+
     private void detectUserAndRegisterToken() {
+        // Stop if already registered or too many attempts
+        if (tokenRegistered || detectionAttempts >= MAX_DETECTION_ATTEMPTS) {
+            if (tokenRegistered) {
+                Log.d(TAG, "Token already registered, stopping detection");
+            } else {
+                Log.d(TAG, "Max detection attempts reached");
+            }
+            return;
+        }
+
+        detectionAttempts++;
+
         // Get logged-in user from Frappe JavaScript
         String js = "(function() { " +
                 "if (typeof frappe !== 'undefined' && frappe.session && frappe.session.user) { " +
@@ -395,22 +410,27 @@ public class MainActivity extends AppCompatActivity {
             String user = value.replace("\"", "").trim();
 
             if (!user.isEmpty() && !user.equals("null") && !user.equals("Guest")) {
-                Log.d(TAG, "Logged in user: " + user);
+                Log.d(TAG, "Logged in user detected: " + user + " (attempt " + detectionAttempts + ")");
 
                 // Register token if user changed or not yet registered
                 if (!user.equals(currentUser) || !tokenRegistered) {
                     currentUser = user;
-                    tokenRegistered = false;
 
                     if (fcmToken != null) {
                         registerTokenForUser(fcmToken, user);
+                    } else {
+                        Log.d(TAG, "FCM token not yet available, will retry");
                     }
                 }
+            } else {
+                Log.d(TAG, "User not logged in yet (attempt " + detectionAttempts + ")");
+            }
+
+            // Retry detection if not yet registered
+            if (!tokenRegistered && detectionAttempts < MAX_DETECTION_ATTEMPTS) {
+                new Handler(Looper.getMainLooper()).postDelayed(this::detectUserAndRegisterToken, 3000);
             }
         });
-
-        // Retry detection after delays (Frappe may still be loading)
-        new Handler(Looper.getMainLooper()).postDelayed(this::detectUserAndRegisterToken, 3000);
     }
 
     private void setupSwipeRefresh() {
@@ -474,36 +494,48 @@ public class MainActivity extends AppCompatActivity {
                 URL url = new URL(siteUrl + Config.TOKEN_REGISTER_PATH);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                conn.setRequestProperty("Accept", "application/json");
                 conn.setDoOutput(true);
 
-                // Send cookies for authentication
+                // Send cookies for authentication - critical for Frappe session
                 String cookies = CookieManager.getInstance().getCookie(siteUrl);
                 if (cookies != null) {
                     conn.setRequestProperty("Cookie", cookies);
+                    Log.d(TAG, "Sending cookies: " + cookies.substring(0, Math.min(50, cookies.length())) + "...");
+                } else {
+                    Log.w(TAG, "No cookies available for authentication!");
                 }
 
                 // Get device info
                 String deviceModel = Build.MANUFACTURER + " " + Build.MODEL;
                 String osVersion = "Android " + Build.VERSION.RELEASE;
 
-                // Build JSON body
-                String jsonBody = String.format(
-                        "{\"token\":\"%s\", \"user\":\"%s\", \"device_model\":\"%s\", \"os_version\":\"%s\", \"app_version\":\"1.0.0\"}",
-                        token, user, deviceModel, osVersion
-                );
+                // Build form-urlencoded body (Frappe prefers this format)
+                // Don't send user parameter - let server use session user
+                String formBody = "token=" + java.net.URLEncoder.encode(token, "UTF-8") +
+                        "&device_model=" + java.net.URLEncoder.encode(deviceModel, "UTF-8") +
+                        "&os_version=" + java.net.URLEncoder.encode(osVersion, "UTF-8") +
+                        "&app_version=1.0.0";
+
+                Log.d(TAG, "Registering token for user: " + user);
 
                 try (OutputStream os = conn.getOutputStream()) {
-                    os.write(jsonBody.getBytes());
+                    os.write(formBody.getBytes());
                     os.flush();
                 }
 
                 int responseCode = conn.getResponseCode();
-                Log.d(TAG, "Token registration response: " + responseCode);
+                Log.d(TAG, "Token registration response code: " + responseCode);
 
                 // Read response
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(conn.getInputStream()));
+                BufferedReader reader;
+                if (responseCode >= 200 && responseCode < 300) {
+                    reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                } else {
+                    reader = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+                }
+
                 StringBuilder response = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -511,18 +543,22 @@ public class MainActivity extends AppCompatActivity {
                 }
                 reader.close();
 
-                if (Config.DEBUG) Log.d(TAG, "Response: " + response.toString());
+                Log.d(TAG, "Registration response: " + response.toString());
 
+                final String responseStr = response.toString();
                 mainHandler.post(() -> {
-                    if (responseCode == 200) {
+                    if (responseCode == 200 && responseStr.contains("\"success\"")) {
                         tokenRegistered = true;
-                        Log.d(TAG, "FCM token registered for user: " + user);
+                        Log.d(TAG, "FCM token registered successfully for user: " + user);
+                        Toast.makeText(MainActivity.this, "Push notifications enabled", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Log.e(TAG, "Token registration failed: " + responseStr);
                     }
                 });
 
                 conn.disconnect();
             } catch (Exception e) {
-                Log.e(TAG, "Token registration failed", e);
+                Log.e(TAG, "Token registration failed with exception", e);
             }
         });
     }
