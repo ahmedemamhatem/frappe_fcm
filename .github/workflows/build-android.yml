@@ -116,25 +116,20 @@ jobs:
         run: gradle wrapper --gradle-version 8.2
 
       - name: Build Debug APK
-        if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == '' }}
         working-directory: mobile_app
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Build Release APK
-        if: ${{ github.event.inputs.build_type == 'release' }}
         working-directory: mobile_app
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Create releases directory
         run: mkdir -p releases
 
-      - name: Copy APK to releases folder
+      - name: Copy APKs to releases folder
         run: |
-          if [ "${{ github.event.inputs.build_type }}" == "release" ]; then
-            cp mobile_app/app/build/outputs/apk/release/*.apk releases/frappe-fcm-release.apk 2>/dev/null || true
-          else
-            cp mobile_app/app/build/outputs/apk/debug/*.apk releases/frappe-fcm-debug.apk 2>/dev/null || true
-          fi
+          cp mobile_app/app/build/outputs/apk/debug/*.apk releases/frappe-fcm-debug.apk 2>/dev/null || true
+          cp mobile_app/app/build/outputs/apk/release/*.apk releases/frappe-fcm-release.apk 2>/dev/null || true
 
       - name: Commit APK to repository
         run: |
@@ -145,14 +140,12 @@ jobs:
           git push
 
       - name: Upload Debug APK as Artifact
-        if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: frappe-fcm-debug
           path: mobile_app/app/build/outputs/apk/debug/*.apk
 
       - name: Upload Release APK as Artifact
-        if: ${{ github.event.inputs.build_type == 'release' }}
         uses: actions/upload-artifact@v4
         with:
           name: frappe-fcm-release
