@@ -5,16 +5,15 @@
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
+    "fcm_instructions_html",
     "fcm_section",
     "fcm_enabled",
     "fcm_project_id",
     "column_break_fcm",
-    "fcm_server_key",
     "fcm_service_account_json",
     "fcm_test_section",
     "fcm_test_button",
     "fcm_connection_status",
-    "fcm_instructions_html",
     "frappe_integration_section",
     "auto_send_on_notification",
     "send_for_system_notification",
@@ -36,20 +35,27 @@
   ],
   "fields": [
     {
+      "fieldname": "fcm_instructions_html",
+      "fieldtype": "HTML",
+      "label": "Setup Instructions",
+      "options": "<div style=\"background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;\"><h3 style=\"margin: 0 0 10px 0; font-size: 24px;\">Firebase Cloud Messaging Setup</h3><p style=\"margin: 0; opacity: 0.9;\">Follow these steps to enable push notifications for your mobile app</p></div><div style=\"display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px;\"><div style=\"background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);\"><div style=\"display: flex; align-items: center; margin-bottom: 10px;\"><span style=\"background: #2196f3; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;\">1</span><strong style=\"color: #1565c0;\">Create Firebase Project</strong></div><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px; line-height: 1.6;\"><li>Go to <a href=\"https://console.firebase.google.com\" target=\"_blank\">Firebase Console</a></li><li>Click <b>Add project</b></li><li>Follow the setup wizard</li></ul></div><div style=\"background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);\"><div style=\"display: flex; align-items: center; margin-bottom: 10px;\"><span style=\"background: #4caf50; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;\">2</span><strong style=\"color: #2e7d32;\">Get Service Account JSON</strong></div><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px; line-height: 1.6;\"><li>Project Settings → Service Accounts</li><li>Click <b>Generate New Private Key</b></li><li>Download and copy JSON contents</li><li>Paste in field below</li></ul></div><div style=\"background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);\"><div style=\"display: flex; align-items: center; margin-bottom: 10px;\"><span style=\"background: #ff9800; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;\">3</span><strong style=\"color: #e65100;\">Add Android App</strong></div><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px; line-height: 1.6;\"><li>Project Settings → Your apps</li><li>Click Add app → Android</li><li>Package name: <code style=\"background:#f5f5f5;padding:2px 5px;border-radius:3px;\">io.frappe.fcm</code></li><li>Download google-services.json</li></ul></div><div style=\"background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);\"><div style=\"display: flex; align-items: center; margin-bottom: 10px;\"><span style=\"background: #9c27b0; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;\">4</span><strong style=\"color: #7b1fa2;\">Install Mobile App</strong></div><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px; line-height: 1.6;\"><li>Download APK from <a href=\"https://github.com/ahmedemamhatem/frappe_fcm/releases\" target=\"_blank\">GitHub Releases</a></li><li>Install on Android device</li><li>Enter your site URL</li><li>Login with Frappe credentials</li></ul></div></div>"
+    },
+    {
       "fieldname": "fcm_section",
       "fieldtype": "Section Break",
-      "label": "Firebase Cloud Messaging Settings"
+      "label": "Firebase Configuration"
     },
     {
       "default": "0",
       "description": "Enable FCM push notifications",
       "fieldname": "fcm_enabled",
       "fieldtype": "Check",
-      "label": "Enable FCM"
+      "label": "Enable FCM",
+      "in_list_view": 1
     },
     {
       "depends_on": "fcm_enabled",
-      "description": "Your Firebase Project ID (found in Firebase Console > Project Settings)",
+      "description": "Found in Firebase Console → Project Settings → General",
       "fieldname": "fcm_project_id",
       "fieldtype": "Data",
       "label": "Firebase Project ID",
@@ -61,40 +67,28 @@
     },
     {
       "depends_on": "fcm_enabled",
-      "description": "Legacy Server Key from Firebase Console > Project Settings > Cloud Messaging (deprecated, use Service Account instead)",
-      "fieldname": "fcm_server_key",
-      "fieldtype": "Password",
-      "label": "FCM Server Key (Legacy)"
-    },
-    {
-      "depends_on": "fcm_enabled",
-      "description": "Full Service Account JSON from Firebase Console > Project Settings > Service Accounts > Generate New Private Key (RECOMMENDED)",
+      "description": "Paste the full JSON content from the downloaded service account key file",
       "fieldname": "fcm_service_account_json",
       "fieldtype": "Code",
-      "label": "FCM Service Account JSON",
+      "label": "Service Account JSON",
       "options": "JSON"
     },
     {
       "fieldname": "fcm_test_section",
       "fieldtype": "Section Break",
-      "label": "Test Connection"
+      "label": "Connection Test"
     },
     {
       "depends_on": "fcm_enabled",
       "fieldname": "fcm_test_button",
       "fieldtype": "Button",
-      "label": "Test FCM Connection"
+      "label": "Test FCM Connection",
+      "options": "test_fcm_connection"
     },
     {
       "fieldname": "fcm_connection_status",
       "fieldtype": "HTML",
-      "label": "Connection Status"
-    },
-    {
-      "fieldname": "fcm_instructions_html",
-      "fieldtype": "HTML",
-      "label": "Setup Instructions",
-      "options": "<div style=\"background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid #2196f3; margin: 10px 0;\"><h4 style=\"color: #1565c0; margin-top: 0;\">Complete FCM Setup Guide</h4><h5 style=\"color: #1976d2;\">Step 1: Create Firebase Project</h5><ol style=\"color: #333; line-height: 1.8; margin-bottom: 15px;\"><li>Go to <a href=\"https://console.firebase.google.com\" target=\"_blank\">Firebase Console</a></li><li>Click <strong>Add project</strong> or select existing project</li><li>Follow the setup wizard (you can disable Google Analytics)</li></ol><h5 style=\"color: #1976d2;\">Step 2: Get Service Account JSON (for this page)</h5><ol style=\"color: #333; line-height: 1.8; margin-bottom: 15px;\"><li>In Firebase Console, click the <strong>gear icon</strong> → <strong>Project Settings</strong></li><li>Go to <strong>Service Accounts</strong> tab</li><li>Click <strong>Generate New Private Key</strong></li><li>Download the JSON file</li><li>Open the file and <strong>copy all contents</strong></li><li>Paste into <strong>FCM Service Account JSON</strong> field above</li><li>Copy <strong>Project ID</strong> from General tab → paste into <strong>Firebase Project ID</strong> field</li></ol><h5 style=\"color: #1976d2;\">Step 3: Add Android App to Firebase</h5><ol style=\"color: #333; line-height: 1.8; margin-bottom: 15px;\"><li>In Project Settings, scroll to <strong>Your apps</strong></li><li>Click <strong>Add app</strong> → Select <strong>Android</strong></li><li>Enter package name: <code>io.frappe.fcm</code></li><li>Click <strong>Register app</strong></li><li>Download <code>google-services.json</code></li><li><strong>Important:</strong> This file is needed to build the Android app with your Firebase credentials</li></ol><h5 style=\"color: #1976d2;\">Step 4: Mobile App Setup</h5><ol style=\"color: #333; line-height: 1.8;\"><li>Download the pre-built APK from <a href=\"https://github.com/ahmedemamhatem/frappe_fcm/releases\" target=\"_blank\">GitHub Releases</a></li><li>Install APK on Android device</li><li>On first launch, enter your Frappe site URL</li><li>Log in with your Frappe credentials</li><li>The app will automatically register for push notifications</li></ol><hr style=\"border-color: #bbdefb; margin: 15px 0;\"><div style=\"background: #fff3e0; padding: 10px; border-radius: 5px;\"><p style=\"color: #e65100; margin: 0 0 5px 0;\"><strong>Building Custom APK (Optional):</strong></p><p style=\"color: #333; margin: 0; font-size: 12px;\">To build with your own Firebase credentials, place <code>google-services.json</code> in <code>mobile_app/app/</code> folder and run <code>./gradlew assembleRelease</code></p></div></div>"
+      "label": "Status"
     },
     {
       "fieldname": "frappe_integration_section",
@@ -103,7 +97,7 @@
     },
     {
       "default": "1",
-      "description": "Automatically send FCM push when Frappe Notifications trigger",
+      "description": "Automatically send push notification when Frappe Notifications trigger",
       "fieldname": "auto_send_on_notification",
       "fieldtype": "Check",
       "label": "Auto Send on Frappe Notification"
@@ -111,7 +105,6 @@
     {
       "default": "1",
       "depends_on": "auto_send_on_notification",
-      "description": "Send FCM when System Notifications are triggered",
       "fieldname": "send_for_system_notification",
       "fieldtype": "Check",
       "label": "Send for System Notifications"
@@ -123,7 +116,6 @@
     {
       "default": "1",
       "depends_on": "auto_send_on_notification",
-      "description": "Send FCM when Email Notifications are triggered",
       "fieldname": "send_for_email_notification",
       "fieldtype": "Check",
       "label": "Send for Email Notifications"
@@ -131,41 +123,42 @@
     {
       "fieldname": "frappe_integration_info",
       "fieldtype": "HTML",
-      "label": "Frappe Integration Info",
-      "options": "<div style=\"background: #e8f5e9; padding: 10px; border-radius: 5px; margin-top: 10px;\">\n<p style=\"color: #2e7d32; margin: 0;\"><strong>How Frappe Integration Works:</strong></p>\n<ul style=\"color: #333; margin: 5px 0; font-size: 12px;\">\n<li>When a Frappe <strong>Notification</strong> triggers (System or Email), FCM push is also sent</li>\n<li>Recipients are determined by the Notification's recipient settings</li>\n<li>Only users with registered mobile devices will receive push notifications</li>\n<li>You can disable FCM per-notification using the <strong>Send FCM Push</strong> checkbox in each Notification rule</li>\n</ul>\n</div>"
+      "label": "Info",
+      "options": "<div style=\"background: #e8f5e9; padding: 12px; border-radius: 6px; border-left: 4px solid #4caf50; margin-top: 10px;\"><p style=\"margin: 0 0 8px 0; color: #2e7d32; font-weight: 600;\">How it works:</p><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px;\"><li>When Frappe Notification triggers, FCM push is sent to the recipient</li><li>Only users with registered mobile devices receive notifications</li><li>Control FCM per-notification using <b>Send FCM Push</b> checkbox in Notification rules</li></ul></div>"
     },
     {
       "fieldname": "notification_section",
       "fieldtype": "Section Break",
-      "label": "Notification Defaults"
+      "label": "Notification Defaults",
+      "collapsible": 1
     },
     {
       "default": "frappe_fcm_notifications",
       "description": "Android notification channel ID",
       "fieldname": "notification_channel_id",
       "fieldtype": "Data",
-      "label": "Notification Channel ID"
+      "label": "Channel ID"
     },
     {
       "default": "Notification",
       "description": "Default title when none provided",
       "fieldname": "default_notification_title",
       "fieldtype": "Data",
-      "label": "Default Notification Title"
+      "label": "Default Title"
     },
     {
       "fieldname": "column_break_notification",
       "fieldtype": "Column Break"
     },
     {
-      "description": "Default notification icon name (Android drawable resource)",
+      "description": "Android drawable resource name",
       "fieldname": "default_notification_icon",
       "fieldtype": "Data",
-      "label": "Default Notification Icon"
+      "label": "Default Icon"
     },
     {
       "default": "default",
-      "description": "Notification sound (default or custom sound file name)",
+      "description": "Sound name or 'default'",
       "fieldname": "default_sound",
       "fieldtype": "Data",
       "label": "Default Sound"
@@ -178,17 +171,17 @@
     },
     {
       "default": "1",
-      "description": "Send notifications asynchronously in background",
+      "description": "Send notifications in background (recommended)",
       "fieldname": "send_async",
       "fieldtype": "Check",
       "label": "Send Asynchronously"
     },
     {
       "default": "1",
-      "description": "Retry failed notifications",
+      "description": "Retry failed notifications automatically",
       "fieldname": "retry_failed",
       "fieldtype": "Check",
-      "label": "Retry Failed Notifications"
+      "label": "Retry Failed"
     },
     {
       "fieldname": "column_break_advanced",
@@ -197,14 +190,14 @@
     {
       "default": "3",
       "depends_on": "retry_failed",
-      "description": "Maximum retry attempts for failed notifications",
+      "description": "Maximum retry attempts",
       "fieldname": "max_retries",
       "fieldtype": "Int",
       "label": "Max Retries"
     },
     {
       "default": "1",
-      "description": "Log all notification attempts",
+      "description": "Log all notification attempts to FCM Notification Log",
       "fieldname": "log_notifications",
       "fieldtype": "Check",
       "label": "Log Notifications"
@@ -212,7 +205,16 @@
   ],
   "index_web_pages_for_search": 1,
   "issingle": 1,
-  "links": [],
+  "links": [
+    {
+      "link_doctype": "FCM Device",
+      "link_fieldname": "name"
+    },
+    {
+      "link_doctype": "FCM Notification Log",
+      "link_fieldname": "name"
+    }
+  ],
   "modified": "2025-01-01 00:00:00",
   "modified_by": "Administrator",
   "module": "FCM",
