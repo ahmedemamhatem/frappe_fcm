@@ -1,0 +1,182 @@
+{
+  "actions": [],
+  "autoname": "format:{user}-{device_id}",
+  "creation": "2025-01-01 00:00:00",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "user",
+    "fcm_token",
+    "column_break_1",
+    "device_id",
+    "device_name",
+    "device_info_section",
+    "device_info",
+    "device_model",
+    "column_break_device",
+    "os_version",
+    "app_version",
+    "section_break_status",
+    "enabled",
+    "last_used",
+    "column_break_dates",
+    "created_on",
+    "notification_count",
+    "section_break_actions",
+    "send_test_button",
+    "refresh_token_button"
+  ],
+  "fields": [
+    {
+      "fieldname": "user",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "label": "User",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "fcm_token",
+      "fieldtype": "Small Text",
+      "in_list_view": 1,
+      "label": "FCM Token",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "device_id",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Device ID"
+    },
+    {
+      "fieldname": "device_name",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Device Name"
+    },
+    {
+      "collapsible": 1,
+      "fieldname": "device_info_section",
+      "fieldtype": "Section Break",
+      "label": "Device Information"
+    },
+    {
+      "fieldname": "device_info",
+      "fieldtype": "Small Text",
+      "label": "Device Info",
+      "read_only": 1
+    },
+    {
+      "fieldname": "device_model",
+      "fieldtype": "Data",
+      "label": "Device Model",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_device",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "os_version",
+      "fieldtype": "Data",
+      "label": "OS Version",
+      "read_only": 1
+    },
+    {
+      "fieldname": "app_version",
+      "fieldtype": "Data",
+      "label": "App Version",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_break_status",
+      "fieldtype": "Section Break",
+      "label": "Status & Usage"
+    },
+    {
+      "default": "1",
+      "fieldname": "enabled",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "Enabled"
+    },
+    {
+      "fieldname": "last_used",
+      "fieldtype": "Datetime",
+      "in_list_view": 1,
+      "label": "Last Used",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_dates",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "created_on",
+      "fieldtype": "Datetime",
+      "label": "Created On",
+      "read_only": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "notification_count",
+      "fieldtype": "Int",
+      "label": "Notifications Sent",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_break_actions",
+      "fieldtype": "Section Break",
+      "label": "Actions"
+    },
+    {
+      "fieldname": "send_test_button",
+      "fieldtype": "Button",
+      "label": "Send Test Notification"
+    },
+    {
+      "fieldname": "refresh_token_button",
+      "fieldtype": "Button",
+      "label": "Check Token Status"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2025-01-01 00:00:00",
+  "modified_by": "Administrator",
+  "module": "FCM",
+  "name": "FCM Device",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "delete": 1,
+      "if_owner": 1,
+      "read": 1,
+      "role": "All",
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "title_field": "user",
+  "track_changes": 1
+}

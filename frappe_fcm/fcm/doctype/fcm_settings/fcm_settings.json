@@ -1,0 +1,238 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2025-01-01 00:00:00",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "fcm_section",
+    "fcm_enabled",
+    "fcm_project_id",
+    "column_break_fcm",
+    "fcm_server_key",
+    "fcm_service_account_json",
+    "fcm_test_section",
+    "fcm_test_button",
+    "fcm_connection_status",
+    "fcm_instructions_html",
+    "frappe_integration_section",
+    "auto_send_on_notification",
+    "send_for_system_notification",
+    "column_break_frappe",
+    "send_for_email_notification",
+    "frappe_integration_info",
+    "notification_section",
+    "notification_channel_id",
+    "default_notification_title",
+    "column_break_notification",
+    "default_notification_icon",
+    "default_sound",
+    "advanced_section",
+    "send_async",
+    "retry_failed",
+    "column_break_advanced",
+    "max_retries",
+    "log_notifications"
+  ],
+  "fields": [
+    {
+      "fieldname": "fcm_section",
+      "fieldtype": "Section Break",
+      "label": "Firebase Cloud Messaging Settings"
+    },
+    {
+      "default": "0",
+      "description": "Enable FCM push notifications",
+      "fieldname": "fcm_enabled",
+      "fieldtype": "Check",
+      "label": "Enable FCM"
+    },
+    {
+      "depends_on": "fcm_enabled",
+      "description": "Your Firebase Project ID (found in Firebase Console > Project Settings)",
+      "fieldname": "fcm_project_id",
+      "fieldtype": "Data",
+      "label": "Firebase Project ID",
+      "mandatory_depends_on": "fcm_enabled"
+    },
+    {
+      "fieldname": "column_break_fcm",
+      "fieldtype": "Column Break"
+    },
+    {
+      "depends_on": "fcm_enabled",
+      "description": "Legacy Server Key from Firebase Console > Project Settings > Cloud Messaging (deprecated, use Service Account instead)",
+      "fieldname": "fcm_server_key",
+      "fieldtype": "Password",
+      "label": "FCM Server Key (Legacy)"
+    },
+    {
+      "depends_on": "fcm_enabled",
+      "description": "Full Service Account JSON from Firebase Console > Project Settings > Service Accounts > Generate New Private Key (RECOMMENDED)",
+      "fieldname": "fcm_service_account_json",
+      "fieldtype": "Code",
+      "label": "FCM Service Account JSON",
+      "options": "JSON"
+    },
+    {
+      "fieldname": "fcm_test_section",
+      "fieldtype": "Section Break",
+      "label": "Test Connection"
+    },
+    {
+      "depends_on": "fcm_enabled",
+      "fieldname": "fcm_test_button",
+      "fieldtype": "Button",
+      "label": "Test FCM Connection"
+    },
+    {
+      "fieldname": "fcm_connection_status",
+      "fieldtype": "HTML",
+      "label": "Connection Status"
+    },
+    {
+      "fieldname": "fcm_instructions_html",
+      "fieldtype": "HTML",
+      "label": "Setup Instructions",
+      "options": "<div style=\"background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid #2196f3; margin: 10px 0;\">\n<h4 style=\"color: #1565c0; margin-top: 0;\">Firebase Cloud Messaging Setup Guide</h4>\n<ol style=\"color: #333; line-height: 2;\">\n<li>Go to <a href=\"https://console.firebase.google.com\" target=\"_blank\">Firebase Console</a></li>\n<li>Create a new project or select an existing one</li>\n<li>Go to <strong>Project Settings</strong> (gear icon)</li>\n<li>Select <strong>Service Accounts</strong> tab</li>\n<li>Click <strong>Generate New Private Key</strong></li>\n<li>Download the JSON file and copy its contents</li>\n<li>Paste the full JSON in the <strong>FCM Service Account JSON</strong> field above</li>\n<li>Copy the <strong>Project ID</strong> from the General tab</li>\n</ol>\n<hr style=\"border-color: #bbdefb;\">\n<div style=\"background: #fff3e0; padding: 10px; border-radius: 5px; margin-top: 10px;\">\n<p style=\"color: #e65100; margin: 0;\"><strong>Important Notes:</strong></p>\n<ul style=\"color: #333; margin: 5px 0;\">\n<li>Service Account JSON is the recommended method (FCM v1 API)</li>\n<li>Legacy Server Key is deprecated by Google</li>\n<li>Make sure to enable Cloud Messaging API in Google Cloud Console</li>\n<li>Add your Android app in Firebase to get <code>google-services.json</code></li>\n</ul>\n</div>\n</div>"
+    },
+    {
+      "fieldname": "frappe_integration_section",
+      "fieldtype": "Section Break",
+      "label": "Frappe Notification Integration"
+    },
+    {
+      "default": "1",
+      "description": "Automatically send FCM push when Frappe Notifications trigger",
+      "fieldname": "auto_send_on_notification",
+      "fieldtype": "Check",
+      "label": "Auto Send on Frappe Notification"
+    },
+    {
+      "default": "1",
+      "depends_on": "auto_send_on_notification",
+      "description": "Send FCM when System Notifications are triggered",
+      "fieldname": "send_for_system_notification",
+      "fieldtype": "Check",
+      "label": "Send for System Notifications"
+    },
+    {
+      "fieldname": "column_break_frappe",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "1",
+      "depends_on": "auto_send_on_notification",
+      "description": "Send FCM when Email Notifications are triggered",
+      "fieldname": "send_for_email_notification",
+      "fieldtype": "Check",
+      "label": "Send for Email Notifications"
+    },
+    {
+      "fieldname": "frappe_integration_info",
+      "fieldtype": "HTML",
+      "label": "Frappe Integration Info",
+      "options": "<div style=\"background: #e8f5e9; padding: 10px; border-radius: 5px; margin-top: 10px;\">\n<p style=\"color: #2e7d32; margin: 0;\"><strong>How Frappe Integration Works:</strong></p>\n<ul style=\"color: #333; margin: 5px 0; font-size: 12px;\">\n<li>When a Frappe <strong>Notification</strong> triggers (System or Email), FCM push is also sent</li>\n<li>Recipients are determined by the Notification's recipient settings</li>\n<li>Only users with registered mobile devices will receive push notifications</li>\n<li>You can disable FCM per-notification using the <strong>Send FCM Push</strong> checkbox in each Notification rule</li>\n</ul>\n</div>"
+    },
+    {
+      "fieldname": "notification_section",
+      "fieldtype": "Section Break",
+      "label": "Notification Defaults"
+    },
+    {
+      "default": "frappe_fcm_notifications",
+      "description": "Android notification channel ID",
+      "fieldname": "notification_channel_id",
+      "fieldtype": "Data",
+      "label": "Notification Channel ID"
+    },
+    {
+      "default": "Notification",
+      "description": "Default title when none provided",
+      "fieldname": "default_notification_title",
+      "fieldtype": "Data",
+      "label": "Default Notification Title"
+    },
+    {
+      "fieldname": "column_break_notification",
+      "fieldtype": "Column Break"
+    },
+    {
+      "description": "Default notification icon name (Android drawable resource)",
+      "fieldname": "default_notification_icon",
+      "fieldtype": "Data",
+      "label": "Default Notification Icon"
+    },
+    {
+      "default": "default",
+      "description": "Notification sound (default or custom sound file name)",
+      "fieldname": "default_sound",
+      "fieldtype": "Data",
+      "label": "Default Sound"
+    },
+    {
+      "collapsible": 1,
+      "fieldname": "advanced_section",
+      "fieldtype": "Section Break",
+      "label": "Advanced Settings"
+    },
+    {
+      "default": "1",
+      "description": "Send notifications asynchronously in background",
+      "fieldname": "send_async",
+      "fieldtype": "Check",
+      "label": "Send Asynchronously"
+    },
+    {
+      "default": "1",
+      "description": "Retry failed notifications",
+      "fieldname": "retry_failed",
+      "fieldtype": "Check",
+      "label": "Retry Failed Notifications"
+    },
+    {
+      "fieldname": "column_break_advanced",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "3",
+      "depends_on": "retry_failed",
+      "description": "Maximum retry attempts for failed notifications",
+      "fieldname": "max_retries",
+      "fieldtype": "Int",
+      "label": "Max Retries"
+    },
+    {
+      "default": "1",
+      "description": "Log all notification attempts",
+      "fieldname": "log_notifications",
+      "fieldtype": "Check",
+      "label": "Log Notifications"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "issingle": 1,
+  "links": [],
+  "modified": "2025-01-01 00:00:00",
+  "modified_by": "Administrator",
+  "module": "FCM",
+  "name": "FCM Settings",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "print": 1,
+      "read": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

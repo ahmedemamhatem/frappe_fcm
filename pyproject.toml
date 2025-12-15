@@ -1,0 +1,21 @@
+[project]
+name = "frappe_fcm"
+authors = [
+    { name = "Frappe FCM Contributors", email = "hello@frappe.io"}
+]
+description = "Firebase Cloud Messaging (FCM) Push Notifications for Frappe"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    "google-auth>=2.0.0",
+    "google-auth-oauthlib>=1.0.0",
+    "requests>=2.25.0",
+]
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "frappe_fcm"

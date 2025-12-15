@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TODO: Change app name to your app's name -->
+    <string name="app_name">Frappe FCM</string>
+
+    <!-- Offline screen -->
+    <string name="offline_title">No Connection</string>
+    <string name="offline_message">Please check your internet connection and try again.</string>
+    <string name="offline_description">Offline icon</string>
+    <string name="retry">Retry</string>
+</resources>

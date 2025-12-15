@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Base application theme -->
+    <style name="Theme.FrappeFCM" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/colorAccent</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="android:statusBarColor" tools:targetApi="l">@color/colorPrimaryDark</item>
+    </style>
+
+    <!-- Splash screen theme -->
+    <style name="Theme.FrappeFCM.Splash" parent="Theme.FrappeFCM">
+        <item name="android:windowBackground">@color/colorPrimary</item>
+    </style>
+
+</resources>

@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Mobile app build artifacts
+mobile_app/app/build/
+mobile_app/.gradle/
+mobile_app/local.properties
+mobile_app/*.iml
+mobile_app/.idea/
+
+# Firebase config (should be added per-project)
+mobile_app/app/google-services.json
+
+# Signing
+*.keystore
+*.jks
