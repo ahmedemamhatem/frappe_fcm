@@ -133,8 +133,8 @@ jobs:
 
       - name: Commit APK to repository
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "ahmedemamhatem@gmail.com"
+          git config --local user.name "Ahmed Emam"
           git add releases/
           git diff --staged --quiet || git commit -m "Add APK build $(date +'%Y-%m-%d %H:%M')"
           git push
