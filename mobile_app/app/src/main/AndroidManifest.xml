@@ -8,11 +8,6 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="29" />
 
     <application
         android:allowBackup="true"
@@ -25,24 +20,15 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
 
-        <!-- Setup Activity (First Launch) -->
+        <!-- Main Activity -->
         <activity
-            android:name=".SetupActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.FrappeFCM">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <!-- Main Activity -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:launchMode="singleTask"
-            android:theme="@style/Theme.FrappeFCM">
         </activity>
 
         <!-- Firebase Messaging Service -->

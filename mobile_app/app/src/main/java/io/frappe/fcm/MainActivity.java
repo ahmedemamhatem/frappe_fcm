@@ -1,50 +1,39 @@
 /*
- * Frappe FCM - Main Activity
+ * Frappe FCM - Simple Push Notification App
  *
- * This activity displays your Frappe site in a WebView and handles
- * FCM token registration when users log in.
+ * This app connects to any Frappe site and receives push notifications.
+ * Users enter site URL, username, and password to authenticate.
  */
 
 package io.frappe.fcm;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.webkit.CookieManager;
-import android.webkit.ValueCallback;
-import android.webkit.WebChromeClient;
-import android.webkit.SslErrorHandler;
-import android.webkit.WebResourceError;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.firebase.messaging.FirebaseMessaging;
+
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -58,40 +47,24 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "FrappeFCM";
 
-    private WebView webView;
+    // UI Elements
+    private LinearLayout loginLayout;
+    private LinearLayout connectedLayout;
+    private EditText urlInput;
+    private EditText usernameInput;
+    private EditText passwordInput;
+    private Button connectButton;
+    private Button disconnectButton;
     private ProgressBar progressBar;
-    private SwipeRefreshLayout swipeRefresh;
-    private View offlineView;
+    private TextView statusText;
+    private TextView connectedUrlText;
+    private TextView connectedUserText;
 
-    private ValueCallback<Uri[]> fileUploadCallback;
+    // State
     private String fcmToken;
-    private String currentUser;
-    private boolean tokenRegistered = false;
-
-    // Site URL from SharedPreferences
-    private String siteUrl;
-
+    private String sessionCookie;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-
-    // File chooser launcher
-    private final ActivityResultLauncher<Intent> fileChooserLauncher =
-            registerForActivityResult(
-                    new ActivityResultContracts.StartActivityForResult(),
-                    result -> {
-                        if (fileUploadCallback != null) {
-                            Uri[] results = null;
-                            if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                                String dataString = result.getData().getDataString();
-                                if (dataString != null) {
-                                    results = new Uri[]{Uri.parse(dataString)};
-                                }
-                            }
-                            fileUploadCallback.onReceiveValue(results);
-                            fileUploadCallback = null;
-                        }
-                    }
-            );
 
     // Permission launcher
     private final ActivityResultLauncher<String> permissionLauncher =
@@ -101,10 +74,7 @@ public class MainActivity extends AppCompatActivity {
                         if (isGranted) {
                             Log.d(TAG, "Notification permission granted");
                         } else {
-                            Log.d(TAG, "Notification permission denied");
-                            Toast.makeText(this,
-                                    "Enable notifications in Settings to receive alerts",
-                                    Toast.LENGTH_LONG).show();
+                            Toast.makeText(this, "Enable notifications in Settings", Toast.LENGTH_LONG).show();
                         }
                     }
             );
@@ -112,35 +82,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Check if configured
-        SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
-        if (!prefs.getBoolean(Config.PREF_CONFIGURED, false)) {
-            // Not configured, go to setup
-            startSetupActivity();
-            return;
-        }
-
-        // Get site URL from preferences
-        siteUrl = prefs.getString(Config.PREF_SITE_URL, "");
-        if (siteUrl.isEmpty()) {
-            startSetupActivity();
-            return;
-        }
-
         setContentView(R.layout.activity_main);
 
-        Log.d(TAG, "onCreate - Frappe FCM App");
-        Log.d(TAG, "Target URL: " + siteUrl);
-
         // Initialize views
-        webView = findViewById(R.id.webView);
-        progressBar = findViewById(R.id.progressBar);
-        swipeRefresh = findViewById(R.id.swipeRefresh);
-        offlineView = findViewById(R.id.offlineView);
-
-        // Enable hardware acceleration for WebView
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        initViews();
 
         // Create notification channel
         createNotificationChannel();
@@ -148,298 +93,286 @@ public class MainActivity extends AppCompatActivity {
         // Request notification permission (Android 13+)
         requestNotificationPermission();
 
-        // Setup WebView
-        setupWebView();
-
-        // Setup SwipeRefresh
-        setupSwipeRefresh();
-
         // Get FCM Token
         getFCMToken();
 
-        // Load URL
-        Log.d(TAG, "Loading URL: " + siteUrl);
-        webView.loadUrl(siteUrl);
-
-        // Handle deep link / notification click
-        handleIntent(getIntent());
+        // Check if already connected
+        checkExistingConnection();
     }
 
-    private void startSetupActivity() {
-        Intent intent = new Intent(this, SetupActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
+    private void initViews() {
+        loginLayout = findViewById(R.id.loginLayout);
+        connectedLayout = findViewById(R.id.connectedLayout);
+        urlInput = findViewById(R.id.urlInput);
+        usernameInput = findViewById(R.id.usernameInput);
+        passwordInput = findViewById(R.id.passwordInput);
+        connectButton = findViewById(R.id.connectButton);
+        disconnectButton = findViewById(R.id.disconnectButton);
+        progressBar = findViewById(R.id.progressBar);
+        statusText = findViewById(R.id.statusText);
+        connectedUrlText = findViewById(R.id.connectedUrlText);
+        connectedUserText = findViewById(R.id.connectedUserText);
+
+        connectButton.setOnClickListener(v -> connect());
+        disconnectButton.setOnClickListener(v -> confirmDisconnect());
     }
 
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        handleIntent(intent);
+    private void checkExistingConnection() {
+        SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
+        boolean isConnected = prefs.getBoolean("is_connected", false);
+
+        if (isConnected) {
+            String url = prefs.getString(Config.PREF_SITE_URL, "");
+            String user = prefs.getString("connected_user", "");
+            showConnectedState(url, user);
+        } else {
+            showLoginState();
+        }
     }
 
-    private void handleIntent(Intent intent) {
-        if (intent == null) return;
+    private void showLoginState() {
+        loginLayout.setVisibility(View.VISIBLE);
+        connectedLayout.setVisibility(View.GONE);
+        progressBar.setVisibility(View.GONE);
+        statusText.setText("");
+    }
 
-        // Handle deep link
-        if (Intent.ACTION_VIEW.equals(intent.getAction())) {
-            Uri data = intent.getData();
-            if (data != null) {
-                webView.loadUrl(data.toString());
+    private void showConnectedState(String url, String user) {
+        loginLayout.setVisibility(View.GONE);
+        connectedLayout.setVisibility(View.VISIBLE);
+        connectedUrlText.setText(url);
+        connectedUserText.setText(user);
+    }
+
+    private void connect() {
+        String url = urlInput.getText().toString().trim();
+        String username = usernameInput.getText().toString().trim();
+        String password = passwordInput.getText().toString().trim();
+
+        // Validate inputs
+        if (url.isEmpty()) {
+            urlInput.setError("Enter site URL");
+            return;
+        }
+        if (username.isEmpty()) {
+            usernameInput.setError("Enter username");
+            return;
+        }
+        if (password.isEmpty()) {
+            passwordInput.setError("Enter password");
+            return;
+        }
+
+        // Add https if missing
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
+
+        // Remove trailing slash
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+
+        final String siteUrl = url;
+
+        // Show progress
+        progressBar.setVisibility(View.VISIBLE);
+        connectButton.setEnabled(false);
+        statusText.setText("Connecting...");
+
+        // Login and register token
+        executor.execute(() -> {
+            try {
+                // Step 1: Login to Frappe
+                String loginResult = login(siteUrl, username, password);
+
+                if (loginResult == null) {
+                    mainHandler.post(() -> {
+                        showError("Login failed. Check credentials.");
+                        connectButton.setEnabled(true);
+                        progressBar.setVisibility(View.GONE);
+                    });
+                    return;
+                }
+
+                mainHandler.post(() -> statusText.setText("Registering device..."));
+
+                // Step 2: Register FCM token
+                if (fcmToken != null) {
+                    boolean registered = registerToken(siteUrl, fcmToken);
+
+                    if (registered) {
+                        // Save connection info
+                        SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
+                        prefs.edit()
+                                .putBoolean("is_connected", true)
+                                .putBoolean(Config.PREF_CONFIGURED, true)
+                                .putString(Config.PREF_SITE_URL, siteUrl)
+                                .putString("connected_user", username)
+                                .putString("session_cookie", sessionCookie)
+                                .apply();
+
+                        mainHandler.post(() -> {
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(MainActivity.this, "Connected! You will receive notifications.", Toast.LENGTH_LONG).show();
+                            showConnectedState(siteUrl, username);
+                        });
+                    } else {
+                        mainHandler.post(() -> {
+                            showError("Failed to register device");
+                            connectButton.setEnabled(true);
+                            progressBar.setVisibility(View.GONE);
+                        });
+                    }
+                } else {
+                    mainHandler.post(() -> {
+                        showError("FCM token not available. Try again.");
+                        connectButton.setEnabled(true);
+                        progressBar.setVisibility(View.GONE);
+                    });
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Connection failed", e);
+                mainHandler.post(() -> {
+                    showError("Connection failed: " + e.getMessage());
+                    connectButton.setEnabled(true);
+                    progressBar.setVisibility(View.GONE);
+                });
             }
-        }
+        });
+    }
 
-        // Handle notification click (URL from FCMService)
-        if (intent.hasExtra("url")) {
-            String url = intent.getStringExtra("url");
-            if (url != null && !url.isEmpty()) {
-                webView.loadUrl(url);
+    private String login(String siteUrl, String username, String password) {
+        try {
+            URL url = new URL(siteUrl + "/api/method/login");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+
+            String body = "usr=" + java.net.URLEncoder.encode(username, "UTF-8") +
+                    "&pwd=" + java.net.URLEncoder.encode(password, "UTF-8");
+
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(body.getBytes());
+                os.flush();
             }
+
+            int responseCode = conn.getResponseCode();
+            Log.d(TAG, "Login response code: " + responseCode);
+
+            if (responseCode == 200) {
+                // Get session cookie
+                String cookies = conn.getHeaderField("Set-Cookie");
+                if (cookies != null) {
+                    sessionCookie = cookies;
+                    Log.d(TAG, "Got session cookie");
+                }
+
+                // Read response
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+
+                Log.d(TAG, "Login response: " + response.toString());
+                return response.toString();
+            }
+
+            conn.disconnect();
+        } catch (Exception e) {
+            Log.e(TAG, "Login error", e);
         }
+        return null;
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
-    }
+    private boolean registerToken(String siteUrl, String token) {
+        try {
+            URL url = new URL(siteUrl + Config.TOKEN_REGISTER_PATH);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
 
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.action_refresh) {
-            webView.reload();
-            return true;
-        } else if (id == R.id.action_settings) {
-            showSettingsDialog();
-            return true;
-        } else if (id == R.id.action_change_site) {
-            confirmChangeSite();
-            return true;
+            // Send session cookie
+            if (sessionCookie != null) {
+                conn.setRequestProperty("Cookie", sessionCookie);
+            }
+
+            // Get device info
+            String deviceModel = Build.MANUFACTURER + " " + Build.MODEL;
+            String osVersion = "Android " + Build.VERSION.RELEASE;
+
+            String body = "token=" + java.net.URLEncoder.encode(token, "UTF-8") +
+                    "&device_model=" + java.net.URLEncoder.encode(deviceModel, "UTF-8") +
+                    "&os_version=" + java.net.URLEncoder.encode(osVersion, "UTF-8") +
+                    "&app_version=1.0.0";
+
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(body.getBytes());
+                os.flush();
+            }
+
+            int responseCode = conn.getResponseCode();
+            Log.d(TAG, "Register token response: " + responseCode);
+
+            // Read response
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(responseCode >= 200 && responseCode < 300 ?
+                            conn.getInputStream() : conn.getErrorStream()));
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            reader.close();
+
+            Log.d(TAG, "Register response: " + response.toString());
+
+            conn.disconnect();
+
+            return responseCode == 200 && response.toString().contains("success");
+
+        } catch (Exception e) {
+            Log.e(TAG, "Register token error", e);
         }
-        return super.onOptionsItemSelected(item);
+        return false;
     }
 
-    private void showSettingsDialog() {
+    private void confirmDisconnect() {
         new AlertDialog.Builder(this)
-                .setTitle("App Settings")
-                .setMessage("Current Site: " + siteUrl + "\n\nFCM Token: " + (fcmToken != null ? fcmToken.substring(0, 20) + "..." : "Not available"))
-                .setPositiveButton("OK", null)
-                .setNeutralButton("Change Site", (d, w) -> confirmChangeSite())
-                .show();
-    }
-
-    private void confirmChangeSite() {
-        new AlertDialog.Builder(this)
-                .setTitle("Change Site")
-                .setMessage("Are you sure you want to change the Frappe site? You will need to reconfigure the app.")
-                .setPositiveButton("Yes", (dialog, which) -> {
-                    // Clear preferences
-                    SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
-                    prefs.edit().clear().apply();
-
-                    // Clear WebView data
-                    webView.clearCache(true);
-                    webView.clearHistory();
-                    CookieManager.getInstance().removeAllCookies(null);
-
-                    // Go to setup
-                    startSetupActivity();
-                })
+                .setTitle("Disconnect")
+                .setMessage("You will stop receiving notifications. Continue?")
+                .setPositiveButton("Yes", (dialog, which) -> disconnect())
                 .setNegativeButton("No", null)
                 .show();
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private void setupWebView() {
-        WebSettings settings = webView.getSettings();
+    private void disconnect() {
+        // Clear saved data
+        SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
+        prefs.edit().clear().apply();
 
-        // Enable JavaScript (required for Frappe)
-        settings.setJavaScriptEnabled(true);
-        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        // Clear inputs
+        urlInput.setText("");
+        usernameInput.setText("");
+        passwordInput.setText("");
 
-        // DOM Storage
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
+        // Show login
+        showLoginState();
 
-        // Cache
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-
-        // File access
-        settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(true);
-
-        // Zoom
-        settings.setBuiltInZoomControls(true);
-        settings.setDisplayZoomControls(false);
-        settings.setSupportZoom(true);
-
-        // Media
-        settings.setMediaPlaybackRequiresUserGesture(false);
-
-        // Mixed content (allow HTTP on HTTPS for development)
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-
-        // User Agent
-        String userAgent = settings.getUserAgentString();
-        settings.setUserAgentString(userAgent + " FrappeFCM-Android/1.0");
-
-        // Enable cookies
-        CookieManager cookieManager = CookieManager.getInstance();
-        cookieManager.setAcceptCookie(true);
-        cookieManager.setAcceptThirdPartyCookies(webView, true);
-
-        // WebView Client
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                super.onPageStarted(view, url, favicon);
-                if (Config.DEBUG) Log.d(TAG, "Page started: " + url);
-                progressBar.setVisibility(View.VISIBLE);
-                offlineView.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                if (Config.DEBUG) Log.d(TAG, "Page finished: " + url);
-                progressBar.setVisibility(View.GONE);
-                swipeRefresh.setRefreshing(false);
-
-                // Inject FCM token to JavaScript (optional - for JS access)
-                if (fcmToken != null) {
-                    String js = "window.FCM_TOKEN = '" + fcmToken + "';";
-                    webView.evaluateJavascript(js, null);
-                }
-
-                // Detect logged-in user and register token
-                detectUserAndRegisterToken();
-            }
-
-            @Override
-            public void onReceivedError(WebView view, WebResourceRequest request,
-                                        WebResourceError error) {
-                super.onReceivedError(view, request, error);
-                if (request.isForMainFrame()) {
-                    Log.e(TAG, "WebView error: " + error.getDescription());
-                    progressBar.setVisibility(View.GONE);
-                    swipeRefresh.setRefreshing(false);
-                    offlineView.setVisibility(View.VISIBLE);
-                }
-            }
-
-            @Override
-            public void onReceivedSslError(WebView view, SslErrorHandler handler,
-                                           android.net.http.SslError error) {
-                Log.e(TAG, "SSL Error: " + error.toString());
-                // For production, handle SSL errors properly
-                // For development with self-signed certs, you can proceed
-                handler.proceed();
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-
-                // Open external links in browser
-                if (!url.startsWith(siteUrl)) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    startActivity(intent);
-                    return true;
-                }
-
-                return false;
-            }
-        });
-
-        // WebChrome Client for file upload
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public void onProgressChanged(WebView view, int newProgress) {
-                progressBar.setProgress(newProgress);
-            }
-
-            @Override
-            public boolean onShowFileChooser(WebView webView,
-                                             ValueCallback<Uri[]> filePathCallback,
-                                             FileChooserParams fileChooserParams) {
-                if (fileUploadCallback != null) {
-                    fileUploadCallback.onReceiveValue(null);
-                }
-                fileUploadCallback = filePathCallback;
-
-                Intent intent = fileChooserParams.createIntent();
-                try {
-                    fileChooserLauncher.launch(intent);
-                } catch (Exception e) {
-                    fileUploadCallback = null;
-                    Toast.makeText(MainActivity.this,
-                            "Cannot open file chooser", Toast.LENGTH_SHORT).show();
-                    return false;
-                }
-                return true;
-            }
-        });
+        Toast.makeText(this, "Disconnected", Toast.LENGTH_SHORT).show();
     }
 
-    private int detectionAttempts = 0;
-    private static final int MAX_DETECTION_ATTEMPTS = 10;
-
-    private void detectUserAndRegisterToken() {
-        // Stop if already registered or too many attempts
-        if (tokenRegistered || detectionAttempts >= MAX_DETECTION_ATTEMPTS) {
-            if (tokenRegistered) {
-                Log.d(TAG, "Token already registered, stopping detection");
-            } else {
-                Log.d(TAG, "Max detection attempts reached");
-            }
-            return;
-        }
-
-        detectionAttempts++;
-
-        // Get logged-in user from Frappe JavaScript
-        String js = "(function() { " +
-                "if (typeof frappe !== 'undefined' && frappe.session && frappe.session.user) { " +
-                "  return frappe.session.user; " +
-                "} " +
-                "return ''; " +
-                "})()";
-
-        webView.evaluateJavascript(js, value -> {
-            String user = value.replace("\"", "").trim();
-
-            if (!user.isEmpty() && !user.equals("null") && !user.equals("Guest")) {
-                Log.d(TAG, "Logged in user detected: " + user + " (attempt " + detectionAttempts + ")");
-
-                // Register token if user changed or not yet registered
-                if (!user.equals(currentUser) || !tokenRegistered) {
-                    currentUser = user;
-
-                    if (fcmToken != null) {
-                        registerTokenForUser(fcmToken, user);
-                    } else {
-                        Log.d(TAG, "FCM token not yet available, will retry");
-                    }
-                }
-            } else {
-                Log.d(TAG, "User not logged in yet (attempt " + detectionAttempts + ")");
-            }
-
-            // Retry detection if not yet registered
-            if (!tokenRegistered && detectionAttempts < MAX_DETECTION_ATTEMPTS) {
-                new Handler(Looper.getMainLooper()).postDelayed(this::detectUserAndRegisterToken, 3000);
-            }
-        });
-    }
-
-    private void setupSwipeRefresh() {
-        swipeRefresh.setColorSchemeResources(R.color.colorPrimary);
-        swipeRefresh.setOnRefreshListener(() -> webView.reload());
-
-        // Disable swipe refresh when scrolled down
-        webView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) ->
-                swipeRefresh.setEnabled(scrollY == 0));
+    private void showError(String message) {
+        statusText.setText(message);
+        statusText.setTextColor(getResources().getColor(android.R.color.holo_red_dark, null));
     }
 
     private void createNotificationChannel() {
@@ -463,8 +396,7 @@ public class MainActivity extends AppCompatActivity {
     private void requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
-                    Manifest.permission.POST_NOTIFICATIONS) !=
-                    PackageManager.PERMISSION_GRANTED) {
+                    Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
             }
         }
@@ -477,104 +409,9 @@ public class MainActivity extends AppCompatActivity {
                         Log.w(TAG, "FCM token failed", task.getException());
                         return;
                     }
-
                     fcmToken = task.getResult();
-                    Log.d(TAG, "FCM Token obtained: " + fcmToken.substring(0, 20) + "...");
-
-                    // If user already logged in, register token
-                    if (currentUser != null && !currentUser.isEmpty()) {
-                        registerTokenForUser(fcmToken, currentUser);
-                    }
+                    Log.d(TAG, "FCM Token: " + fcmToken.substring(0, 20) + "...");
                 });
-    }
-
-    private void registerTokenForUser(String token, String user) {
-        executor.execute(() -> {
-            try {
-                URL url = new URL(siteUrl + Config.TOKEN_REGISTER_PATH);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setDoOutput(true);
-
-                // Send cookies for authentication - critical for Frappe session
-                String cookies = CookieManager.getInstance().getCookie(siteUrl);
-                if (cookies != null) {
-                    conn.setRequestProperty("Cookie", cookies);
-                    Log.d(TAG, "Sending cookies: " + cookies.substring(0, Math.min(50, cookies.length())) + "...");
-                } else {
-                    Log.w(TAG, "No cookies available for authentication!");
-                }
-
-                // Get device info
-                String deviceModel = Build.MANUFACTURER + " " + Build.MODEL;
-                String osVersion = "Android " + Build.VERSION.RELEASE;
-
-                // Build form-urlencoded body (Frappe prefers this format)
-                // Don't send user parameter - let server use session user
-                String formBody = "token=" + java.net.URLEncoder.encode(token, "UTF-8") +
-                        "&device_model=" + java.net.URLEncoder.encode(deviceModel, "UTF-8") +
-                        "&os_version=" + java.net.URLEncoder.encode(osVersion, "UTF-8") +
-                        "&app_version=1.0.0";
-
-                Log.d(TAG, "Registering token for user: " + user);
-
-                try (OutputStream os = conn.getOutputStream()) {
-                    os.write(formBody.getBytes());
-                    os.flush();
-                }
-
-                int responseCode = conn.getResponseCode();
-                Log.d(TAG, "Token registration response code: " + responseCode);
-
-                // Read response
-                BufferedReader reader;
-                if (responseCode >= 200 && responseCode < 300) {
-                    reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                } else {
-                    reader = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
-                }
-
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-                reader.close();
-
-                Log.d(TAG, "Registration response: " + response.toString());
-
-                final String responseStr = response.toString();
-                mainHandler.post(() -> {
-                    if (responseCode == 200 && responseStr.contains("\"success\"")) {
-                        tokenRegistered = true;
-                        Log.d(TAG, "FCM token registered successfully for user: " + user);
-                        Toast.makeText(MainActivity.this, "Push notifications enabled", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Log.e(TAG, "Token registration failed: " + responseStr);
-                    }
-                });
-
-                conn.disconnect();
-            } catch (Exception e) {
-                Log.e(TAG, "Token registration failed with exception", e);
-            }
-        });
-    }
-
-    public void retryConnection(View view) {
-        offlineView.setVisibility(View.GONE);
-        webView.reload();
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
     }
 
     @Override
