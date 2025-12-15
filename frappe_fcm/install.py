@@ -40,7 +40,7 @@ def after_install():
     print("2. Download the Android app template from the mobile_app folder")
     print("3. Configure your Firebase project and get google-services.json")
     print("4. Build and distribute your Android app")
-    print("\nDocumentation: https://github.com/frappe/frappe_fcm")
+    print("\nDocumentation: https://github.com/ahmedemamhatem/frappe_fcm")
     print("=" * 60 + "\n")
 
 
