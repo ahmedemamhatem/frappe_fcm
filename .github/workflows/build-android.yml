@@ -35,10 +35,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Create google-services.json
         run: |
-          # Create a placeholder google-services.json for building
-          # Users should replace this with their own Firebase config
           cat > mobile_app/app/google-services.json << 'EOF'
           {
             "project_info": {
@@ -71,18 +72,19 @@ jobs:
           }
           EOF
 
-      - name: Make gradlew executable
-        run: chmod +x mobile_app/gradlew
+      - name: Generate Gradle wrapper
+        working-directory: mobile_app
+        run: gradle wrapper --gradle-version 8.2
 
       - name: Build Debug APK
         if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == '' }}
         working-directory: mobile_app
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Build Release APK
         if: ${{ github.event.inputs.build_type == 'release' }}
         working-directory: mobile_app
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Create releases directory
         run: mkdir -p releases
@@ -100,7 +102,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add releases/
-          git diff --staged --quiet || git commit -m "🤖 Auto-build: Add APK $(date +'%Y-%m-%d %H:%M')"
+          git diff --staged --quiet || git commit -m "Add APK build $(date +'%Y-%m-%d %H:%M')"
           git push
 
       - name: Upload Debug APK as Artifact
