@@ -12,7 +12,6 @@
     "column_break_fcm",
     "fcm_service_account_json",
     "fcm_test_section",
-    "fcm_test_button",
     "fcm_connection_status",
     "frappe_integration_section",
     "auto_send_on_notification",
@@ -76,14 +75,7 @@
     {
       "fieldname": "fcm_test_section",
       "fieldtype": "Section Break",
-      "label": "Connection Test"
-    },
-    {
-      "depends_on": "fcm_enabled",
-      "fieldname": "fcm_test_button",
-      "fieldtype": "Button",
-      "label": "Test FCM Connection",
-      "options": "test_fcm_connection"
+      "label": "Connection Status"
     },
     {
       "fieldname": "fcm_connection_status",
