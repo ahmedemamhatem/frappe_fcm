@@ -304,11 +304,21 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Login response code: " + responseCode);
 
             if (responseCode == 200) {
-                // Get session cookie
-                String cookies = conn.getHeaderField("Set-Cookie");
-                if (cookies != null) {
-                    sessionCookie = cookies;
-                    Log.d(TAG, "Got session cookie");
+                // Get ALL session cookies (Frappe sends multiple Set-Cookie headers)
+                StringBuilder cookieBuilder = new StringBuilder();
+                java.util.Map<String, java.util.List<String>> headers = conn.getHeaderFields();
+                java.util.List<String> cookieHeaders = headers.get("Set-Cookie");
+                if (cookieHeaders != null) {
+                    for (String cookie : cookieHeaders) {
+                        // Extract just the cookie name=value part (before ;)
+                        String cookiePart = cookie.split(";")[0];
+                        if (cookieBuilder.length() > 0) {
+                            cookieBuilder.append("; ");
+                        }
+                        cookieBuilder.append(cookiePart);
+                    }
+                    sessionCookie = cookieBuilder.toString();
+                    Log.d(TAG, "Got session cookies: " + sessionCookie);
                 }
 
                 // Read response
@@ -346,6 +356,9 @@ public class MainActivity extends AppCompatActivity {
             // Send session cookie
             if (sessionCookie != null) {
                 conn.setRequestProperty("Cookie", sessionCookie);
+                Log.d(TAG, "Sending cookies: " + sessionCookie);
+            } else {
+                Log.w(TAG, "No session cookie available!");
             }
 
             // Get device info
@@ -380,17 +393,22 @@ public class MainActivity extends AppCompatActivity {
 
             conn.disconnect();
 
-            // Check for success - Frappe wraps response in {"message": {...}}
-            // Success if HTTP 200 and response contains "success" with true value
-            String resp = response.toString().toLowerCase();
-            boolean isSuccess = responseCode == 200 &&
-                (resp.contains("\"success\":true") ||
-                 resp.contains("\"success\": true") ||
-                 resp.contains("success\":true") ||
-                 resp.contains("success\": true"));
+            // Success if HTTP 200 and no exception in response
+            String resp = response.toString();
+            Log.d(TAG, "Register HTTP code: " + responseCode + ", response: " + resp);
 
-            Log.d(TAG, "Register success check: " + isSuccess + ", code: " + responseCode);
-            return isSuccess;
+            // Success if 200 and doesn't contain "exception"
+            if (responseCode == 200 && !resp.contains("exception")) {
+                return true;
+            }
+
+            // Also accept if success:true is in response
+            if (resp.toLowerCase().contains("success\":true") ||
+                resp.toLowerCase().contains("success\": true")) {
+                return true;
+            }
+
+            return false;
 
         } catch (Exception e) {
             Log.e(TAG, "Register token error", e);
