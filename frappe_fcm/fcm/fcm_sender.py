@@ -29,7 +29,7 @@ def get_fcm_settings():
         return {
             "project_id": settings.fcm_project_id,
             "service_account_json": settings.fcm_service_account_json,
-            "server_key": settings.get_password("fcm_server_key") if settings.fcm_server_key else None,
+            "server_key": None,  # Legacy API deprecated - use service account JSON instead
             "channel_id": settings.notification_channel_id or "frappe_fcm_notifications",
             "log_notifications": settings.log_notifications,
             "enabled": True

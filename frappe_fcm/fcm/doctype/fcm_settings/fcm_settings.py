@@ -61,19 +61,9 @@ def test_fcm_connection():
                 "message": _("Service Account authentication failed: {0}").format(str(e))
             }
 
-    # Check legacy server key
-    server_key = settings.get_password("fcm_server_key")
-    if server_key:
-        return {
-            "success": True,
-            "message": _("FCM Server Key is configured (Legacy API). Consider migrating to Service Account."),
-            "project_id": settings.fcm_project_id,
-            "api_type": "legacy"
-        }
-
     return {
         "success": False,
-        "message": _("No FCM credentials configured. Please add Service Account JSON or Server Key.")
+        "message": _("No FCM credentials configured. Please add Service Account JSON.")
     }
 
 
