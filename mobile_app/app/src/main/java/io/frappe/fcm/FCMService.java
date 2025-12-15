@@ -10,6 +10,7 @@ package io.frappe.fcm;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.util.Log;
@@ -90,10 +91,15 @@ public class FCMService extends FirebaseMessagingService {
             String doctype = data.get("doctype");
             String name = data.get("name");
             if (doctype != null && name != null && url == null) {
-                // Build document URL
-                String docUrl = Config.BASE_URL + "/app/" +
-                        doctype.toLowerCase().replace(" ", "-") + "/" + name;
-                intent.putExtra("url", docUrl);
+                // Get base URL from SharedPreferences
+                SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
+                String baseUrl = prefs.getString(Config.PREF_SITE_URL, "");
+                if (!baseUrl.isEmpty()) {
+                    // Build document URL
+                    String docUrl = baseUrl + "/app/" +
+                            doctype.toLowerCase().replace(" ", "-") + "/" + name;
+                    intent.putExtra("url", docUrl);
+                }
             }
 
             // Add notification type for handling
