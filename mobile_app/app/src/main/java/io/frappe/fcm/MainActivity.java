@@ -199,10 +199,24 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (attempt >= MAX_TOKEN_WAIT_ATTEMPTS) {
-            // Timeout - try to fetch token again
-            showError("Could not get device token. Please try again.");
-            connectButton.setEnabled(true);
-            progressBar.setVisibility(View.GONE);
+            // Timeout - show dialog to proceed anyway or cancel
+            mainHandler.post(() -> {
+                progressBar.setVisibility(View.GONE);
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("FCM Token Not Available")
+                        .setMessage("Could not get Firebase token. This usually means:\n\n" +
+                                "1. Google Play Services is not installed\n" +
+                                "2. The app needs a valid google-services.json\n\n" +
+                                "Would you like to test the login anyway? (You won't receive notifications)")
+                        .setPositiveButton("Test Login", (dialog, which) -> {
+                            fcmToken = "TEST_TOKEN_" + System.currentTimeMillis();
+                            performConnection(siteUrl, username, password);
+                        })
+                        .setNegativeButton("Cancel", (dialog, which) -> {
+                            connectButton.setEnabled(true);
+                        })
+                        .show();
+            });
             getFCMToken(); // Try again for next time
             return;
         }
