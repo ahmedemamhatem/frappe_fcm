@@ -98,6 +98,38 @@ public class MainActivity extends AppCompatActivity {
 
         // Check if already connected
         checkExistingConnection();
+
+        // Handle notification click - open URL if present
+        handleNotificationIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // Handle notification click when app is already running
+        handleNotificationIntent(intent);
+    }
+
+    private void handleNotificationIntent(Intent intent) {
+        if (intent != null && intent.hasExtra("url")) {
+            String url = intent.getStringExtra("url");
+            if (url != null && !url.isEmpty()) {
+                Log.d(TAG, "Opening URL from notification: " + url);
+                openUrlInBrowser(url);
+                // Clear the extra to prevent re-opening on rotation
+                intent.removeExtra("url");
+            }
+        }
+    }
+
+    private void openUrlInBrowser(String url) {
+        try {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url));
+            startActivity(browserIntent);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to open URL: " + url, e);
+            Toast.makeText(this, "Could not open URL", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void initViews() {
