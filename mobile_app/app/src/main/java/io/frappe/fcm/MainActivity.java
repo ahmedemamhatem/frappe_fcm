@@ -33,8 +33,6 @@ import androidx.core.content.ContextCompat;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 
-import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -46,6 +44,7 @@ import java.util.concurrent.Executors;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "FrappeFCM";
+    private static final int MAX_TOKEN_WAIT_ATTEMPTS = 10;
 
     // UI Elements
     private LinearLayout loginLayout;
@@ -63,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
     // State
     private String fcmToken;
     private String sessionCookie;
+    private boolean tokenFetching = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -135,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
         connectedLayout.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
         statusText.setText("");
+        statusText.setTextColor(getResources().getColor(android.R.color.darker_gray, null));
     }
 
     private void showConnectedState(String url, String user) {
@@ -178,12 +179,43 @@ public class MainActivity extends AppCompatActivity {
         // Show progress
         progressBar.setVisibility(View.VISIBLE);
         connectButton.setEnabled(false);
+        statusText.setTextColor(getResources().getColor(android.R.color.darker_gray, null));
         statusText.setText("Connecting...");
 
-        // Login and register token
+        // If token not ready, wait for it
+        if (fcmToken == null) {
+            statusText.setText("Getting device token...");
+            waitForTokenAndConnect(siteUrl, username, password, 0);
+        } else {
+            performConnection(siteUrl, username, password);
+        }
+    }
+
+    private void waitForTokenAndConnect(String siteUrl, String username, String password, int attempt) {
+        if (fcmToken != null) {
+            // Token is ready, proceed
+            performConnection(siteUrl, username, password);
+            return;
+        }
+
+        if (attempt >= MAX_TOKEN_WAIT_ATTEMPTS) {
+            // Timeout - try to fetch token again
+            showError("Could not get device token. Please try again.");
+            connectButton.setEnabled(true);
+            progressBar.setVisibility(View.GONE);
+            getFCMToken(); // Try again for next time
+            return;
+        }
+
+        // Wait 500ms and check again
+        mainHandler.postDelayed(() -> waitForTokenAndConnect(siteUrl, username, password, attempt + 1), 500);
+    }
+
+    private void performConnection(String siteUrl, String username, String password) {
         executor.execute(() -> {
             try {
                 // Step 1: Login to Frappe
+                mainHandler.post(() -> statusText.setText("Logging in..."));
                 String loginResult = login(siteUrl, username, password);
 
                 if (loginResult == null) {
@@ -198,35 +230,27 @@ public class MainActivity extends AppCompatActivity {
                 mainHandler.post(() -> statusText.setText("Registering device..."));
 
                 // Step 2: Register FCM token
-                if (fcmToken != null) {
-                    boolean registered = registerToken(siteUrl, fcmToken);
+                boolean registered = registerToken(siteUrl, fcmToken);
 
-                    if (registered) {
-                        // Save connection info
-                        SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
-                        prefs.edit()
-                                .putBoolean("is_connected", true)
-                                .putBoolean(Config.PREF_CONFIGURED, true)
-                                .putString(Config.PREF_SITE_URL, siteUrl)
-                                .putString("connected_user", username)
-                                .putString("session_cookie", sessionCookie)
-                                .apply();
+                if (registered) {
+                    // Save connection info
+                    SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
+                    prefs.edit()
+                            .putBoolean("is_connected", true)
+                            .putBoolean(Config.PREF_CONFIGURED, true)
+                            .putString(Config.PREF_SITE_URL, siteUrl)
+                            .putString("connected_user", username)
+                            .putString("session_cookie", sessionCookie)
+                            .apply();
 
-                        mainHandler.post(() -> {
-                            progressBar.setVisibility(View.GONE);
-                            Toast.makeText(MainActivity.this, "Connected! You will receive notifications.", Toast.LENGTH_LONG).show();
-                            showConnectedState(siteUrl, username);
-                        });
-                    } else {
-                        mainHandler.post(() -> {
-                            showError("Failed to register device");
-                            connectButton.setEnabled(true);
-                            progressBar.setVisibility(View.GONE);
-                        });
-                    }
+                    mainHandler.post(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(MainActivity.this, "Connected! You will receive notifications.", Toast.LENGTH_LONG).show();
+                        showConnectedState(siteUrl, username);
+                    });
                 } else {
                     mainHandler.post(() -> {
-                        showError("FCM token not available. Try again.");
+                        showError("Failed to register device. Check if frappe_fcm is installed.");
                         connectButton.setEnabled(true);
                         progressBar.setVisibility(View.GONE);
                     });
@@ -251,6 +275,8 @@ public class MainActivity extends AppCompatActivity {
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
 
             String body = "usr=" + java.net.URLEncoder.encode(username, "UTF-8") +
                     "&pwd=" + java.net.URLEncoder.encode(password, "UTF-8");
@@ -281,6 +307,7 @@ public class MainActivity extends AppCompatActivity {
                 reader.close();
 
                 Log.d(TAG, "Login response: " + response.toString());
+                conn.disconnect();
                 return response.toString();
             }
 
@@ -299,6 +326,8 @@ public class MainActivity extends AppCompatActivity {
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
 
             // Send session cookie
             if (sessionCookie != null) {
@@ -403,14 +432,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getFCMToken() {
+        if (tokenFetching) return;
+        tokenFetching = true;
+
         FirebaseMessaging.getInstance().getToken()
                 .addOnCompleteListener(task -> {
+                    tokenFetching = false;
                     if (!task.isSuccessful()) {
                         Log.w(TAG, "FCM token failed", task.getException());
                         return;
                     }
                     fcmToken = task.getResult();
-                    Log.d(TAG, "FCM Token: " + fcmToken.substring(0, 20) + "...");
+                    Log.d(TAG, "FCM Token obtained: " + fcmToken.substring(0, Math.min(20, fcmToken.length())) + "...");
                 });
     }
 
