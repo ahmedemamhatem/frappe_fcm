@@ -1,86 +1,90 @@
 {
-  "charts": [],
-  "content": "[{\"id\":\"Wwj7I8PpjH\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Push Notifications</b></span>\",\"col\":12}},{\"id\":\"shortcuts_block\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"FCM Settings\",\"col\":4}},{\"id\":\"Xf2N9KpqLm\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"FCM Device\",\"col\":4}},{\"id\":\"Yg3O0LqrMn\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"FCM Notification Log\",\"col\":4}},{\"id\":\"Zh4P1MrsNo\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"Ai5Q2NstOp\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports & Analytics</b></span>\",\"col\":12}},{\"id\":\"Bj6R3OtuPq\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Notification Logs\",\"col\":4}}]",
-  "creation": "2025-01-01 00:00:00.000000",
-  "docstatus": 0,
-  "doctype": "Workspace",
-  "for_user": "",
-  "hide_custom": 0,
-  "icon": "bell",
-  "idx": 0,
-  "is_hidden": 0,
-  "label": "FCM",
-  "links": [
-    {
-      "hidden": 0,
-      "is_query_report": 0,
-      "label": "Settings",
-      "link_count": 0,
-      "link_to": "FCM Settings",
-      "link_type": "DocType",
-      "onboard": 1,
-      "type": "Link"
-    },
-    {
-      "hidden": 0,
-      "is_query_report": 0,
-      "label": "Devices",
-      "link_count": 0,
-      "link_to": "FCM Device",
-      "link_type": "DocType",
-      "onboard": 0,
-      "type": "Link"
-    },
-    {
-      "hidden": 0,
-      "is_query_report": 0,
-      "label": "Notification Logs",
-      "link_count": 0,
-      "link_to": "FCM Notification Log",
-      "link_type": "DocType",
-      "onboard": 0,
-      "type": "Link"
-    }
-  ],
-  "modified": "2025-01-01 00:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "FCM",
-  "name": "FCM",
-  "owner": "Administrator",
-  "parent_page": "",
-  "public": 1,
-  "restrict_to_domain": "",
-  "roles": [],
-  "sequence_id": 10,
-  "shortcuts": [
-    {
-      "color": "Blue",
-      "doc_view": "",
-      "label": "FCM Settings",
-      "link_to": "FCM Settings",
-      "type": "DocType"
-    },
-    {
-      "color": "Green",
-      "doc_view": "List",
-      "label": "FCM Device",
-      "link_to": "FCM Device",
-      "type": "DocType"
-    },
-    {
-      "color": "Orange",
-      "doc_view": "List",
-      "label": "FCM Notification Log",
-      "link_to": "FCM Notification Log",
-      "type": "DocType"
-    },
-    {
-      "color": "Grey",
-      "doc_view": "List",
-      "label": "Notification Logs",
-      "link_to": "FCM Notification Log",
-      "type": "DocType"
-    }
-  ],
-  "title": "FCM"
+ "charts": [],
+ "content": "[{\"id\":\"Wwj7I8PpjH\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Push Notifications</b></span>\",\"col\":12}},{\"id\":\"shortcuts_block\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"FCM Settings\",\"col\":4}},{\"id\":\"Xf2N9KpqLm\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"FCM Device\",\"col\":4}},{\"id\":\"Yg3O0LqrMn\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"FCM Notification Log\",\"col\":4}},{\"id\":\"Zh4P1MrsNo\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"Ai5Q2NstOp\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports &amp; Analytics</b></span>\",\"col\":12}},{\"id\":\"Bj6R3OtuPq\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Notification Logs\",\"col\":4}}]",
+ "creation": "2025-01-01 00:00:00",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "change",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "FCM",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings",
+   "link_count": 0,
+   "link_to": "FCM Settings",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Devices",
+   "link_count": 0,
+   "link_to": "FCM Device",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Notification Logs",
+   "link_count": 0,
+   "link_to": "FCM Notification Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2025-12-15 22:10:18.122749",
+ "modified_by": "Administrator",
+ "module": "FCM",
+ "name": "FCM",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 10.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "FCM Settings",
+   "link_to": "FCM Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "FCM Device",
+   "link_to": "FCM Device",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "FCM Notification Log",
+   "link_to": "FCM Notification Log",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Notification Logs",
+   "link_to": "FCM Notification Log",
+   "type": "DocType"
+  }
+ ],
+ "title": "FCM"
 }
