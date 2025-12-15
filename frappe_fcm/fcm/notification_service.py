@@ -432,7 +432,7 @@ def register_device_token(
     )
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def register_user_fcm_token(
     token: str,
     user: Optional[str] = None,
