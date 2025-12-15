@@ -9,35 +9,51 @@ frappe.ui.form.on("FCM Settings", {
 
         // Add primary button at top of page only
         frm.page.set_primary_action(__("Test FCM Connection"), function() {
-            test_fcm_connection(frm);
+            test_fcm_connection(frm, true);
         }, "fa fa-check");
 
-        // Update status display on refresh
-        update_status_display(frm, null);
+        // Auto-test connection on page load (without freeze)
+        test_fcm_connection(frm, false);
     }
 });
 
-function test_fcm_connection(frm) {
+function test_fcm_connection(frm, show_freeze) {
+    // Show loading state
+    if (frm.fields_dict.fcm_connection_status && frm.fields_dict.fcm_connection_status.$wrapper) {
+        frm.fields_dict.fcm_connection_status.$wrapper.html(`
+            <div style="background: #e9ecef; border: 1px solid #ced4da; border-radius: 8px; padding: 20px; margin: 10px 0;">
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 24px; margin-right: 15px;">&#8987;</span>
+                    <div>
+                        <h4 style="color: #495057; font-size: 18px; margin: 0;">Testing Connection...</h4>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+
     frappe.call({
         method: "frappe_fcm.fcm.doctype.fcm_settings.fcm_settings.test_fcm_connection",
-        freeze: true,
+        freeze: show_freeze,
         freeze_message: __("Testing FCM connection..."),
         callback: function(r) {
             if (r && r.message) {
                 // Update the status display in the page
                 update_status_display(frm, r.message);
 
-                // Also show a brief alert
-                if (r.message.success) {
-                    frappe.show_alert({
-                        message: __("Connection successful!"),
-                        indicator: "green"
-                    }, 3);
-                } else {
-                    frappe.show_alert({
-                        message: r.message.message || __("Connection failed"),
-                        indicator: "red"
-                    }, 5);
+                // Show alert only when manually triggered
+                if (show_freeze) {
+                    if (r.message.success) {
+                        frappe.show_alert({
+                            message: __("Connection successful!"),
+                            indicator: "green"
+                        }, 3);
+                    } else {
+                        frappe.show_alert({
+                            message: r.message.message || __("Connection failed"),
+                            indicator: "red"
+                        }, 5);
+                    }
                 }
             } else {
                 update_status_display(frm, {
