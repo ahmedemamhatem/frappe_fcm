@@ -2,19 +2,13 @@ name: Build Android APK
 
 on:
   push:
-    branches: [main, develop]
-    paths:
-      - 'mobile_app/**'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'mobile_app/**'
+    branches: [main, master]
   workflow_dispatch:
     inputs:
       build_type:
         description: 'Build type (debug/release)'
         required: true
-        default: 'release'
+        default: 'debug'
         type: choice
         options:
           - debug
@@ -23,10 +17,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -37,22 +35,41 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Decode google-services.json
-        if: ${{ env.GOOGLE_SERVICES_JSON != '' }}
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      - name: Create google-services.json
         run: |
-          echo "$GOOGLE_SERVICES_JSON" | base64 -d > mobile_app/app/google-services.json
-
-      - name: Use example google-services.json for testing
-        if: ${{ env.GOOGLE_SERVICES_JSON == '' }}
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        run: |
-          if [ ! -f mobile_app/app/google-services.json ]; then
-            echo "Using example google-services.json for testing"
-            cp mobile_app/app/google-services.json.example mobile_app/app/google-services.json
-          fi
+          # Create a placeholder google-services.json for building
+          # Users should replace this with their own Firebase config
+          cat > mobile_app/app/google-services.json << 'EOF'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "frappe-fcm-placeholder",
+              "storage_bucket": "frappe-fcm-placeholder.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+                  "android_client_info": {
+                    "package_name": "io.frappe.fcm"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyPlaceholderKeyForBuildingOnly"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
 
       - name: Make gradlew executable
         run: chmod +x mobile_app/gradlew
@@ -65,28 +82,37 @@ jobs:
       - name: Build Release APK
         if: ${{ github.event.inputs.build_type == 'release' }}
         working-directory: mobile_app
-        env:
-          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          if [ -n "$KEYSTORE_FILE" ]; then
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
-            export KEYSTORE_FILE=keystore.jks
-          fi
-          ./gradlew assembleRelease
+        run: ./gradlew assembleRelease
 
-      - name: Upload Debug APK
+      - name: Create releases directory
+        run: mkdir -p releases
+
+      - name: Copy APK to releases folder
+        run: |
+          if [ "${{ github.event.inputs.build_type }}" == "release" ]; then
+            cp mobile_app/app/build/outputs/apk/release/*.apk releases/frappe-fcm-release.apk 2>/dev/null || true
+          else
+            cp mobile_app/app/build/outputs/apk/debug/*.apk releases/frappe-fcm-debug.apk 2>/dev/null || true
+          fi
+
+      - name: Commit APK to repository
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add releases/
+          git diff --staged --quiet || git commit -m "🤖 Auto-build: Add APK $(date +'%Y-%m-%d %H:%M')"
+          git push
+
+      - name: Upload Debug APK as Artifact
         if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: frappe-fcm-debug
           path: mobile_app/app/build/outputs/apk/debug/*.apk
 
-      - name: Upload Release APK
+      - name: Upload Release APK as Artifact
         if: ${{ github.event.inputs.build_type == 'release' }}
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: frappe-fcm-release
           path: mobile_app/app/build/outputs/apk/release/*.apk
