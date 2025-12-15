@@ -38,47 +38,78 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Create google-services.json from secret
+      - name: Create google-services.json
         run: |
-          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > mobile_app/app/google-services.json
-          # Verify file was created
-          if [ ! -s mobile_app/app/google-services.json ]; then
-            echo "Warning: GOOGLE_SERVICES_JSON secret not set, using placeholder"
-            cat > mobile_app/app/google-services.json << 'EOF'
+          cat > mobile_app/app/google-services.json << 'EOF'
           {
             "project_info": {
-              "project_number": "000000000000",
-              "project_id": "frappe-fcm-placeholder",
-              "storage_bucket": "frappe-fcm-placeholder.appspot.com"
+              "project_number": "307280394149",
+              "project_id": "erpnext-339815",
+              "storage_bucket": "erpnext-339815.firebasestorage.app"
             },
             "client": [
               {
                 "client_info": {
-                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+                  "mobilesdk_app_id": "1:307280394149:android:4018ce0c37b26539e15a4c",
                   "android_client_info": {
                     "package_name": "io.frappe.fcm"
                   }
                 },
-                "oauth_client": [],
-                "api_key": [{"current_key": "AIzaSyPlaceholderKey"}],
-                "services": {"appinvite_service": {"other_platform_oauth_client": []}}
+                "oauth_client": [
+                  {
+                    "client_id": "101262924027737894129",
+                    "client_type": 3
+                  }
+                ],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyBxGQidz9ICvvH8EVi3HCzvFzODfstqvHo"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": [
+                      {
+                        "client_id": "101262924027737894129",
+                        "client_type": 3
+                      }
+                    ]
+                  }
+                }
               },
               {
                 "client_info": {
-                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000000001",
+                  "mobilesdk_app_id": "1:307280394149:android:4018ce0c37b26539e15a4c",
                   "android_client_info": {
                     "package_name": "io.frappe.fcm.debug"
                   }
                 },
-                "oauth_client": [],
-                "api_key": [{"current_key": "AIzaSyPlaceholderKey"}],
-                "services": {"appinvite_service": {"other_platform_oauth_client": []}}
+                "oauth_client": [
+                  {
+                    "client_id": "101262924027737894129",
+                    "client_type": 3
+                  }
+                ],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyBxGQidz9ICvvH8EVi3HCzvFzODfstqvHo"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": [
+                      {
+                        "client_id": "101262924027737894129",
+                        "client_type": 3
+                      }
+                    ]
+                  }
+                }
               }
             ],
             "configuration_version": "1"
           }
           EOF
-          fi
 
       - name: Generate Gradle wrapper
         working-directory: mobile_app
