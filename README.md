@@ -11,16 +11,17 @@ A complete, production-ready solution for sending push notifications to mobile a
 - **Multi-device Support** - Users can register multiple devices
 - **Automatic Token Management** - Invalid tokens are auto-disabled
 - **Notification Logging** - Track all notification attempts
-- **Ready-to-use Android App Template** - Just configure and build
+- **Ready-to-use Android App** - Generic app that works with any Frappe site
 - **Simple Python API** - Send notifications with one line of code
+- **Frappe Notification Integration** - Auto-sends FCM when Frappe Notifications trigger
 
-## Installation
+## Complete Setup Guide
 
-### 1. Install the app
+### Step 1: Install the Frappe App
 
 ```bash
 # Get the app
-bench get-app https://github.com/frappe/frappe_fcm
+bench get-app https://github.com/ahmedemamhatem/frappe_fcm
 
 # Install on your site
 bench --site your-site.localhost install-app frappe_fcm
@@ -29,47 +30,124 @@ bench --site your-site.localhost install-app frappe_fcm
 bench --site your-site.localhost migrate
 ```
 
-### 2. Configure Firebase
+### Step 2: Create Firebase Project
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Create a new project or select existing
-3. Go to **Project Settings** > **Service Accounts**
-4. Click **Generate New Private Key**
-5. Download the JSON file
+2. Click **"Add project"**
+3. Enter a project name (e.g., "My Frappe App")
+4. Follow the wizard (you can disable Google Analytics)
+5. Click **"Create project"**
 
-### 3. Configure Frappe FCM
+### Step 3: Get Service Account JSON (for Frappe Backend)
 
-1. Go to **FCM Settings** in your Frappe site
-2. Enable FCM
-3. Enter your **Firebase Project ID**
-4. Paste the **Service Account JSON** contents
-5. Click **Test Connection** to verify
+This allows your Frappe server to send push notifications.
 
-## Usage
+1. In Firebase Console, click the **gear icon** (top left) → **Project Settings**
+2. Go to **"Service Accounts"** tab
+3. Click **"Generate New Private Key"**
+4. Click **"Generate Key"** to download the JSON file
+5. Open the downloaded JSON file in a text editor
+6. **Copy all the contents**
+
+### Step 4: Configure FCM Settings in Frappe
+
+1. In your Frappe site, go to **FCM Settings** (search in awesomebar)
+2. Check **"Enable FCM"**
+3. Enter your **Firebase Project ID** (found in Firebase Console → Project Settings → General)
+4. Paste the **Service Account JSON** contents into the "FCM Service Account JSON" field
+5. Click **Save**
+6. Click **"Test FCM Connection"** to verify
+
+### Step 5: Add Android App to Firebase
+
+This creates the configuration needed for the mobile app.
+
+1. In Firebase Console → Project Settings, scroll to **"Your apps"**
+2. Click **"Add app"** → Select **Android** icon
+3. Enter these details:
+   - **Android package name**: `io.frappe.fcm`
+   - **App nickname**: Frappe FCM (optional)
+4. Click **"Register app"**
+5. Click **"Download google-services.json"**
+6. **Save this file** - needed if you want to build your own APK
+
+### Step 6: Install Mobile App
+
+**Option A: Use Pre-built APK (Easiest)**
+
+1. Download APK from [GitHub Releases](https://github.com/ahmedemamhatem/frappe_fcm/releases)
+2. Install on your Android device
+3. Open the app
+4. Enter your Frappe site URL (e.g., `https://your-site.frappe.cloud`)
+5. Log in with your Frappe credentials
+6. Done! The app will automatically register for push notifications
+
+**Option B: Build Your Own APK**
+
+If you want to customize the app or use your own Firebase project:
+
+1. Clone this repository
+2. Place `google-services.json` in `mobile_app/app/` folder
+3. (Optional) Customize app name, colors, icons
+4. Build:
+   ```bash
+   cd mobile_app
+   ./gradlew assembleRelease
+   ```
+5. APK will be in `app/build/outputs/apk/release/`
+
+## How It Works
+
+### Automatic Notifications
+
+When **Frappe Notification Integration** is enabled (default):
+- When a Frappe Notification triggers (System or Email type)
+- FCM push is automatically sent to the recipient
+- Only users with registered mobile devices receive push notifications
+- You can enable/disable FCM per-notification rule
+
+### Manual Notifications
+
+Send notifications from Python code:
+
+```python
+from frappe_fcm.fcm.notification_service import send_notification_to_user
+
+# Send to a single user
+send_notification_to_user(
+    user="user@example.com",
+    title="Hello!",
+    body="This is a test notification"
+)
+```
+
+## Usage Examples
 
 ### Python API
 
 ```python
-from frappe_fcm import send_notification
+from frappe_fcm.fcm.notification_service import (
+    send_notification_to_user,
+    send_notification_to_users,
+    NotificationService
+)
 
 # Send to a single user
-send_notification(
+send_notification_to_user(
     user="user@example.com",
     title="Hello!",
     body="This is a test notification"
 )
 
 # Send to multiple users
-from frappe_fcm import send_notification_to_users
-
 send_notification_to_users(
     users=["user1@example.com", "user2@example.com"],
     title="Announcement",
     body="Important update!"
 )
 
-# Send with data payload
-send_notification(
+# Send with data payload (for deep linking)
+send_notification_to_user(
     user="user@example.com",
     title="New Order",
     body="Order #1234 has been placed",
@@ -80,8 +158,6 @@ send_notification(
 )
 
 # Send to all users with registered devices
-from frappe_fcm.fcm.notification_service import NotificationService
-
 NotificationService.notify_all(
     title="System Update",
     body="The system will be updated tonight"
@@ -116,50 +192,17 @@ POST /api/method/frappe_fcm.fcm.notification_service.send_push_to_user
 }
 ```
 
-## Mobile App Setup
-
-The `mobile_app` folder contains a ready-to-use Android app template. The app is **fully configurable** - users enter their Frappe site URL on first launch.
-
-### Quick Start (Pre-built APK)
-
-1. Download the APK from [Releases](https://github.com/ahmedemamhatem/frappe_fcm/releases)
-2. Install on your Android device
-3. On first launch, enter your Frappe site URL
-4. Log in to your Frappe account
-5. The app will automatically register for push notifications
-
-### Building from Source
-
-1. **Add Firebase to your Android app**:
-   - Go to Firebase Console > Project Settings > Add App > Android
-   - Enter package name: `io.frappe.fcm`
-   - Download `google-services.json`
-   - Place it in `mobile_app/app/` folder
-
-2. **Customize the app** (optional):
-   - Change package name in `app/build.gradle`
-   - Update app name in `res/values/strings.xml`
-   - Change colors in `res/values/colors.xml`
-   - Replace app icon in `res/mipmap-*/` folders
-
-3. **Build the APK**:
-   ```bash
-   cd mobile_app
-   ./gradlew assembleRelease
-   ```
-   APK will be in `app/build/outputs/apk/release/`
-
-### Android App Features
+## Android App Features
 
 - **Configurable Site URL** - Users enter their site on first launch
-- WebView-based app displaying your Frappe site
-- Automatic FCM token registration on user login
-- Push notification handling with deep linking
-- Offline detection with retry
-- Pull-to-refresh
-- File upload support
-- External link handling
-- Settings menu to change site
+- **WebView-based** - Displays your Frappe site as a native app
+- **Automatic Token Registration** - Registers FCM token when user logs in
+- **Push Notifications** - Receives and displays notifications
+- **Deep Linking** - Tapping notification opens the relevant document
+- **Offline Detection** - Shows retry button when offline
+- **Pull-to-Refresh** - Swipe down to refresh
+- **File Upload** - Supports file attachments
+- **Settings Menu** - Change site URL anytime
 
 ## DocTypes
 
@@ -169,7 +212,8 @@ Configuration for FCM integration:
 - Firebase Project ID
 - Service Account JSON (recommended)
 - Legacy Server Key (fallback)
-- Notification defaults
+- Frappe Notification Integration settings
+- Notification defaults (channel ID, sound, icon)
 - Advanced settings (async, retry, logging)
 
 ### FCM Device
@@ -196,7 +240,7 @@ Log of all notification attempts:
 
 | Function | Description |
 |----------|-------------|
-| `send_notification(user, title, body, data)` | Send to single user |
+| `send_notification_to_user(user, title, body, data)` | Send to single user |
 | `send_notification_to_users(users, title, body, data)` | Send to multiple users |
 | `send_fcm_message(fcm_token, title, body, data)` | Send to specific token |
 | `NotificationService.notify_all(title, body, data)` | Send to all devices |
@@ -205,6 +249,7 @@ Log of all notification attempts:
 
 | Endpoint | Auth | Description |
 |----------|------|-------------|
+| `validate_connection` | Guest | Check if FCM app is installed |
 | `register_device_token` | Guest | Register device (deferred) |
 | `register_user_fcm_token` | User | Register device token |
 | `unregister_device` | User | Remove device |
@@ -215,24 +260,31 @@ Log of all notification attempts:
 ## Troubleshooting
 
 ### "FCM not configured"
-- Check FCM Settings has Service Account JSON or Server Key
-- Ensure FCM is enabled in settings
+- Go to FCM Settings and ensure FCM is enabled
+- Check that Service Account JSON is pasted correctly
+- Verify Firebase Project ID is correct
 
 ### "Authentication failed"
-- Verify Service Account JSON is valid
+- Verify Service Account JSON is valid and complete
+- Make sure you copied the entire JSON file contents
 - Check Firebase Cloud Messaging API is enabled in Google Cloud Console
 
 ### Notifications not received
-- Check device token is valid (use "Check Token Status" button)
-- Verify notification channel matches (default: `frappe_fcm_notifications`)
-- Check Error Log for FCM errors
+- Check the device is registered in FCM Device list
+- Verify the user is logged in on the mobile app
+- Check FCM Notification Log for errors
+- Ensure notification channel matches (default: `frappe_fcm_notifications`)
 
 ### Token registration fails
 - Ensure user is logged in (not Guest)
 - Check cookies are being sent with the request
-- Verify API endpoint URL is correct
+- Verify site URL is correct in the mobile app
+
+### Mobile app shows "Connection failed"
+- Verify the site URL is correct and accessible
+- Check that frappe_fcm app is installed on the site
+- Ensure the site has valid SSL certificate (for HTTPS)
 
 ## License
 
 MIT License - see [LICENSE](license.txt)
-
