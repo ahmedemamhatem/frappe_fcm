@@ -14,6 +14,37 @@ frappe.ui.form.on("FCM Settings", {
 
         // Auto-test connection on page load (without freeze)
         test_fcm_connection(frm, false);
+    },
+
+    fetch_shared_credentials_btn: function(frm) {
+        frappe.call({
+            method: 'frappe_fcm.fcm.doctype.fcm_settings.fcm_settings.fetch_shared_credentials',
+            freeze: true,
+            freeze_message: __('Fetching shared Firebase credentials...'),
+            callback: function(r) {
+                if (r.message) {
+                    if (r.message.success) {
+                        // Set the credentials
+                        frm.set_value('fcm_service_account_json', r.message.credentials);
+                        frm.set_value('fcm_project_id', r.message.project_id);
+
+                        frappe.msgprint({
+                            title: __('Success'),
+                            indicator: 'green',
+                            message: r.message.message + '<br><br>' +
+                                __('Project ID: {0}', [r.message.project_id]) + '<br><br>' +
+                                '<b>' + __('Click Save to apply the credentials.') + '</b>'
+                        });
+                    } else {
+                        frappe.msgprint({
+                            title: __('Error'),
+                            indicator: 'red',
+                            message: r.message.message
+                        });
+                    }
+                }
+            }
+        });
     }
 });
 

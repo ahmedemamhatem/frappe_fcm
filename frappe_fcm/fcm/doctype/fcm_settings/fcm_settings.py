@@ -4,10 +4,49 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+import json
 
 
 class FCMSettings(Document):
     pass
+
+
+@frappe.whitelist()
+def fetch_shared_credentials():
+    """
+    Fetch the shared Firebase service account credentials from the official repository.
+    This allows all users to use the same Firebase project for the universal mobile app.
+    """
+    import requests
+
+    url = "https://raw.githubusercontent.com/ahmedemamhatem/frappe_fcm/main/firebase/service-account.json"
+
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+
+        # Validate it's valid JSON
+        credentials = response.json()
+
+        # Extract project_id
+        project_id = credentials.get("project_id", "")
+
+        return {
+            "success": True,
+            "credentials": json.dumps(credentials, indent=2),
+            "project_id": project_id,
+            "message": _("Credentials fetched successfully! Click Save to apply.")
+        }
+    except requests.exceptions.RequestException as e:
+        return {
+            "success": False,
+            "message": _("Failed to fetch credentials: {0}").format(str(e))
+        }
+    except json.JSONDecodeError:
+        return {
+            "success": False,
+            "message": _("Invalid JSON received from server")
+        }
 
 
 @frappe.whitelist()

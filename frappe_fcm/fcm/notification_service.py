@@ -631,3 +631,28 @@ def validate_connection():
         "site": frappe.local.site,
         "version": "1.0.0"
     }
+
+
+@frappe.whitelist(allow_guest=True)
+def get_shared_firebase_config():
+    """
+    Get the shared Firebase configuration for the universal mobile app.
+
+    The mobile app uses a shared Firebase project owned by the app developer.
+    All Frappe sites using this app should use the same service account JSON.
+
+    Returns:
+        dict: Firebase configuration info and download URL
+    """
+    return {
+        "success": True,
+        "message": "Use the shared Firebase service account for Frappe FCM",
+        "project_id": "frappe-fcm-app",
+        "download_url": "https://raw.githubusercontent.com/ahmedemamhatem/frappe_fcm/main/firebase/service-account.json",
+        "instructions": [
+            "1. Download the service account JSON from the URL above",
+            "2. Go to FCM Settings in your Frappe site",
+            "3. Paste the JSON content in the Service Account JSON field",
+            "4. Enable FCM and save"
+        ]
+    }

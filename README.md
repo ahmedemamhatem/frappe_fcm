@@ -64,17 +64,30 @@
 
 ## Quick Start
 
+### 3-Step Setup (No Firebase Configuration Required!)
+
+The mobile app uses a **shared Firebase project** - you don't need to create your own!
+
 ```bash
-# Install the app
+# Step 1: Install the app
 bench get-app https://github.com/ahmedemamhatem/frappe_fcm
 bench --site your-site install-app frappe_fcm
 
-# Configure in Frappe
+# Step 2: Configure in Frappe
 # 1. Go to FCM Settings
-# 2. Enable FCM and paste your Firebase Service Account JSON
-# 3. Save and test connection
+# 2. Enable FCM checkbox
+# 3. Click "Fetch Shared Credentials" button (auto-fills everything!)
+# 4. Save
 
-# Send your first notification
+# Step 3: Install mobile app and login
+# Download APK from releases, enter your site URL, login with Frappe credentials
+```
+
+That's it! No Firebase console setup needed.
+
+### Send Your First Notification
+
+```bash
 bench --site your-site execute frappe_fcm.fcm.notification_service.send_notification_to_user \
   --args '["user@example.com", "Hello!", "Your first push notification"]'
 ```
@@ -108,35 +121,73 @@ bench --site your-site.localhost migrate
 bench --site your-site.localhost clear-cache
 ```
 
-### Step 2: Create Firebase Project
+### Step 2: Configure FCM Settings (Easy Way)
+
+1. Go to your Frappe site
+2. Search for **"FCM Settings"** in the awesomebar
+3. Check **"Enable FCM"**
+4. Click **"Fetch Shared Credentials"** button - this auto-fills the Firebase credentials
+5. Click **Save**
+6. Click **"Test FCM Connection"** button to verify
+
+> **Note:** The app uses a shared Firebase project maintained by the developer. No Firebase console setup required!
+
+### Step 3: Install the Mobile App
+
+1. Download the APK from [GitHub Releases](https://github.com/ahmedemamhatem/frappe_fcm/releases)
+2. Install on your Android device
+3. Enter your Frappe site URL
+4. Login with your Frappe credentials
+5. Done! You'll now receive push notifications
+
+---
+
+## Advanced Setup (Own Firebase Project)
+
+If you prefer to use your own Firebase project:
+
+<details>
+<summary>Click to expand custom Firebase setup instructions</summary>
+
+### Create Firebase Project
 
 1. Navigate to [Firebase Console](https://console.firebase.google.com)
 2. Click **"Add project"** or select an existing project
 3. Enter a project name (e.g., "My ERP Notifications")
 4. Complete the setup wizard
 
-### Step 3: Generate Service Account Key
+### Generate Service Account Key
 
 1. In Firebase Console, click **Settings (gear icon)** → **Project Settings**
 2. Navigate to **"Service Accounts"** tab
 3. Click **"Generate New Private Key"**
 4. Download and securely store the JSON file
-5. Copy the entire JSON content for the next step
+5. Copy the entire JSON content
 
-### Step 4: Configure FCM Settings in Frappe
+### Add Android App in Firebase
 
-1. Go to your Frappe site
-2. Search for **"FCM Settings"** in the awesomebar
-3. Configure the following:
+1. In Firebase Console, go to **Project Settings** → **Your apps**
+2. Click **Add app** → **Android**
+3. Package name: `io.frappe.fcm`
+4. Download `google-services.json`
 
-| Field | Value |
-|-------|-------|
-| Enable FCM | ✓ Checked |
-| Firebase Project ID | Your project ID (from Firebase Console) |
-| Service Account JSON | Paste the entire JSON content |
+### Build Custom APK
 
-4. Click **Save**
-5. Click **"Test FCM Connection"** button to verify
+```bash
+cd frappe_fcm/mobile_app
+cp /path/to/google-services.json app/
+./gradlew assembleRelease
+```
+
+### Configure Frappe
+
+1. Go to **FCM Settings**
+2. Enable FCM
+3. Enter your Firebase Project ID
+4. Paste the Service Account JSON
+5. Save and test connection
+
+</details>
 
 ---
 
