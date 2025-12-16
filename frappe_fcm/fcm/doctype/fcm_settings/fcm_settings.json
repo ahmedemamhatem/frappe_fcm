@@ -12,6 +12,13 @@
     "fetch_shared_credentials_btn",
     "column_break_fcm",
     "fcm_service_account_json",
+    "mobile_app_section",
+    "google_services_json",
+    "parse_google_services_btn",
+    "column_break_mobile",
+    "fcm_sender_id",
+    "fcm_api_key",
+    "fcm_app_id",
     "fcm_test_section",
     "fcm_connection_status",
     "frappe_integration_section",
@@ -38,7 +45,7 @@
       "fieldname": "fcm_instructions_html",
       "fieldtype": "HTML",
       "label": "Setup Instructions",
-      "options": "<div style=\"background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;\"><h3 style=\"margin: 0 0 10px 0; font-size: 24px;\">Firebase Cloud Messaging Setup</h3><p style=\"margin: 0; opacity: 0.9;\">Easy 3-step setup using the universal Frappe FCM mobile app</p></div><div style=\"display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px;\"><div style=\"background: #fff; border: 2px solid #4caf50; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);\"><div style=\"display: flex; align-items: center; margin-bottom: 10px;\"><span style=\"background: #4caf50; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;\">1</span><strong style=\"color: #2e7d32;\">Fetch Shared Credentials</strong></div><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px; line-height: 1.6;\"><li>Enable FCM checkbox below</li><li>Click <b>Fetch Shared Credentials</b> button</li><li>Credentials will auto-fill</li><li>Click <b>Save</b></li></ul></div><div style=\"background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);\"><div style=\"display: flex; align-items: center; margin-bottom: 10px;\"><span style=\"background: #2196f3; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;\">2</span><strong style=\"color: #1565c0;\">Install Mobile App</strong></div><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px; line-height: 1.6;\"><li>Download APK from <a href=\"https://github.com/ahmedemamhatem/frappe_fcm/releases\" target=\"_blank\">GitHub Releases</a></li><li>Install on Android device</li><li>Enter your Frappe site URL</li><li>Login with your credentials</li></ul></div><div style=\"background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);\"><div style=\"display: flex; align-items: center; margin-bottom: 10px;\"><span style=\"background: #9c27b0; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;\">3</span><strong style=\"color: #7b1fa2;\">Test Connection</strong></div><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px; line-height: 1.6;\"><li>Click <b>Test FCM Connection</b> above</li><li>Send a test notification</li><li>Receive on your mobile device</li><li>You're all set!</li></ul></div></div><div style=\"background: #e3f2fd; border-left: 4px solid #2196f3; padding: 12px; border-radius: 4px; margin-bottom: 15px;\"><strong style=\"color: #1565c0;\">Universal App:</strong> <span style=\"color: #555;\">The mobile app works with any Frappe site. Just install once and connect to your site!</span></div>"
+      "options": "<div style=\"background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;\"><h3 style=\"margin: 0 0 10px 0; font-size: 24px;\">Firebase Cloud Messaging Setup</h3><p style=\"margin: 0; opacity: 0.9;\">Use your own Firebase project with the universal mobile app</p></div><div style=\"display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px;\"><div style=\"background: #fff; border: 2px solid #4caf50; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);\"><div style=\"display: flex; align-items: center; margin-bottom: 10px;\"><span style=\"background: #4caf50; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;\">1</span><strong style=\"color: #2e7d32;\">Firebase Setup</strong></div><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px; line-height: 1.6;\"><li>Create project at <a href=\"https://console.firebase.google.com\" target=\"_blank\">Firebase Console</a></li><li>Generate Service Account JSON</li><li>Paste below and Save</li></ul></div><div style=\"background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);\"><div style=\"display: flex; align-items: center; margin-bottom: 10px;\"><span style=\"background: #ff9800; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;\">2</span><strong style=\"color: #e65100;\">Mobile App Config</strong></div><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px; line-height: 1.6;\"><li>Download <b>google-services.json</b></li><li>Paste in Mobile App section below</li><li>Click <b>Parse & Extract Values</b></li></ul></div><div style=\"background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);\"><div style=\"display: flex; align-items: center; margin-bottom: 10px;\"><span style=\"background: #2196f3; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px;\">3</span><strong style=\"color: #1565c0;\">Install & Login</strong></div><ul style=\"margin: 0; padding-left: 20px; color: #555; font-size: 13px; line-height: 1.6;\"><li>Download APK from <a href=\"https://github.com/ahmedemamhatem/frappe_fcm/releases\" target=\"_blank\">GitHub Releases</a></li><li>Enter your site URL</li><li>Login with Frappe credentials</li></ul></div></div><div style=\"background: #e8f5e9; border-left: 4px solid #4caf50; padding: 12px; border-radius: 4px; margin-bottom: 15px;\"><strong style=\"color: #2e7d32;\">Your Own Firebase:</strong> <span style=\"color: #555;\">Each site uses its own Firebase project. The mobile app fetches config dynamically from your site!</span></div>"
     },
     {
       "fieldname": "fcm_section",
@@ -79,6 +86,52 @@
       "fieldtype": "Code",
       "label": "Service Account JSON",
       "options": "JSON"
+    },
+    {
+      "fieldname": "mobile_app_section",
+      "fieldtype": "Section Break",
+      "label": "Mobile App Configuration",
+      "description": "Configuration for the universal mobile app. Paste your google-services.json here.",
+      "collapsible": 1,
+      "depends_on": "fcm_enabled"
+    },
+    {
+      "fieldname": "google_services_json",
+      "fieldtype": "Code",
+      "label": "Google Services JSON",
+      "options": "JSON",
+      "description": "Paste the contents of google-services.json from Firebase Console → Project Settings → Your Apps → Android"
+    },
+    {
+      "fieldname": "parse_google_services_btn",
+      "fieldtype": "Button",
+      "label": "Parse & Extract Values",
+      "description": "Extract FCM configuration values from google-services.json"
+    },
+    {
+      "fieldname": "column_break_mobile",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "fcm_sender_id",
+      "fieldtype": "Data",
+      "label": "FCM Sender ID",
+      "description": "Auto-extracted from google-services.json (project_number)",
+      "read_only": 1
+    },
+    {
+      "fieldname": "fcm_api_key",
+      "fieldtype": "Data",
+      "label": "FCM API Key",
+      "description": "Auto-extracted from google-services.json (current_key)",
+      "read_only": 1
+    },
+    {
+      "fieldname": "fcm_app_id",
+      "fieldtype": "Data",
+      "label": "FCM App ID",
+      "description": "Auto-extracted from google-services.json (mobilesdk_app_id)",
+      "read_only": 1
     },
     {
       "fieldname": "fcm_test_section",

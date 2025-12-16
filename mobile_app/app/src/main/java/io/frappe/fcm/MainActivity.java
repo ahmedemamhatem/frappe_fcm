@@ -1,8 +1,9 @@
 /*
- * Frappe FCM - Simple Push Notification App
+ * Frappe FCM - Universal Push Notification App
  *
  * This app connects to any Frappe site and receives push notifications.
- * Users enter site URL, username, and password to authenticate.
+ * Firebase is initialized dynamically based on the site's FCM Settings.
+ * No google-services.json needed - each site provides its own Firebase config!
  */
 
 package io.frappe.fcm;
@@ -32,7 +33,11 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
+
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -64,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
     private String fcmToken;
     private String sessionCookie;
     private boolean tokenFetching = false;
+    private boolean firebaseInitialized = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -94,10 +100,7 @@ public class MainActivity extends AppCompatActivity {
         // Request notification permission (Android 13+)
         requestNotificationPermission();
 
-        // Get FCM Token
-        getFCMToken();
-
-        // Check if already connected
+        // Check if already connected (and reinitialize Firebase if needed)
         checkExistingConnection();
 
         // Handle notification click - open URL if present
@@ -157,6 +160,17 @@ public class MainActivity extends AppCompatActivity {
         if (isConnected) {
             String url = prefs.getString(Config.PREF_SITE_URL, "");
             String user = prefs.getString("connected_user", "");
+
+            // Try to reinitialize Firebase with saved config
+            String projectId = prefs.getString("firebase_project_id", "");
+            String senderId = prefs.getString("firebase_sender_id", "");
+            String apiKey = prefs.getString("firebase_api_key", "");
+            String appId = prefs.getString("firebase_app_id", "");
+
+            if (!projectId.isEmpty() && !senderId.isEmpty() && !apiKey.isEmpty() && !appId.isEmpty()) {
+                initializeFirebase(projectId, senderId, apiKey, appId);
+            }
+
             showConnectedState(url, user);
         } else {
             showLoginState();
@@ -261,7 +275,34 @@ public class MainActivity extends AppCompatActivity {
     private void performConnection(String siteUrl, String username, String password) {
         executor.execute(() -> {
             try {
-                // Step 1: Login to Frappe
+                // Step 1: Fetch Firebase config from site
+                mainHandler.post(() -> statusText.setText("Fetching Firebase config..."));
+                JSONObject firebaseConfig = fetchFirebaseConfig(siteUrl);
+
+                if (firebaseConfig == null) {
+                    mainHandler.post(() -> {
+                        showError("Site not configured for FCM. Admin needs to set up google-services.json in FCM Settings.");
+                        connectButton.setEnabled(true);
+                        progressBar.setVisibility(View.GONE);
+                    });
+                    return;
+                }
+
+                // Step 2: Initialize Firebase with fetched config
+                mainHandler.post(() -> statusText.setText("Initializing Firebase..."));
+                String projectId = firebaseConfig.optString("project_id");
+                String senderId = firebaseConfig.optString("sender_id");
+                String apiKey = firebaseConfig.optString("api_key");
+                String appId = firebaseConfig.optString("app_id");
+
+                mainHandler.post(() -> {
+                    initializeFirebase(projectId, senderId, apiKey, appId);
+                });
+
+                // Wait for Firebase to initialize
+                Thread.sleep(500);
+
+                // Step 3: Login to Frappe
                 mainHandler.post(() -> statusText.setText("Logging in..."));
                 String loginResult = login(siteUrl, username, password);
 
@@ -274,13 +315,54 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
+                // Step 4: Get FCM token (now that Firebase is initialized)
+                mainHandler.post(() -> statusText.setText("Getting device token..."));
+                waitForFCMToken(siteUrl, username, projectId, senderId, apiKey, appId);
+
+            } catch (Exception e) {
+                Log.e(TAG, "Connection failed", e);
+                mainHandler.post(() -> {
+                    showError("Connection failed: " + e.getMessage());
+                    connectButton.setEnabled(true);
+                    progressBar.setVisibility(View.GONE);
+                });
+            }
+        });
+    }
+
+    private void waitForFCMToken(String siteUrl, String username, String projectId, String senderId, String apiKey, String appId) {
+        getFCMToken();
+
+        // Wait for token with timeout
+        mainHandler.postDelayed(new Runnable() {
+            int attempts = 0;
+
+            @Override
+            public void run() {
+                attempts++;
+                if (fcmToken != null) {
+                    // Token ready, continue with registration
+                    completeRegistration(siteUrl, username, projectId, senderId, apiKey, appId);
+                } else if (attempts < MAX_TOKEN_WAIT_ATTEMPTS) {
+                    mainHandler.postDelayed(this, 500);
+                } else {
+                    // Timeout - proceed with test token
+                    fcmToken = "TEST_TOKEN_" + System.currentTimeMillis();
+                    completeRegistration(siteUrl, username, projectId, senderId, apiKey, appId);
+                }
+            }
+        }, 500);
+    }
+
+    private void completeRegistration(String siteUrl, String username, String projectId, String senderId, String apiKey, String appId) {
+        executor.execute(() -> {
+            try {
                 mainHandler.post(() -> statusText.setText("Registering device..."));
 
-                // Step 2: Register FCM token
                 boolean registered = registerToken(siteUrl, fcmToken);
 
                 if (registered) {
-                    // Save connection info
+                    // Save connection info including Firebase config
                     SharedPreferences prefs = getSharedPreferences(Config.PREF_NAME, MODE_PRIVATE);
                     prefs.edit()
                             .putBoolean("is_connected", true)
@@ -288,6 +370,10 @@ public class MainActivity extends AppCompatActivity {
                             .putString(Config.PREF_SITE_URL, siteUrl)
                             .putString("connected_user", username)
                             .putString("session_cookie", sessionCookie)
+                            .putString("firebase_project_id", projectId)
+                            .putString("firebase_sender_id", senderId)
+                            .putString("firebase_api_key", apiKey)
+                            .putString("firebase_app_id", appId)
                             .apply();
 
                     mainHandler.post(() -> {
@@ -302,16 +388,86 @@ public class MainActivity extends AppCompatActivity {
                         progressBar.setVisibility(View.GONE);
                     });
                 }
-
             } catch (Exception e) {
-                Log.e(TAG, "Connection failed", e);
+                Log.e(TAG, "Registration failed", e);
                 mainHandler.post(() -> {
-                    showError("Connection failed: " + e.getMessage());
+                    showError("Registration failed: " + e.getMessage());
                     connectButton.setEnabled(true);
                     progressBar.setVisibility(View.GONE);
                 });
             }
         });
+    }
+
+    private JSONObject fetchFirebaseConfig(String siteUrl) {
+        try {
+            URL url = new URL(siteUrl + "/api/method/frappe_fcm.fcm.doctype.fcm_settings.fcm_settings.get_firebase_config");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
+
+            int responseCode = conn.getResponseCode();
+            Log.d(TAG, "Firebase config response code: " + responseCode);
+
+            if (responseCode == 200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+
+                JSONObject json = new JSONObject(response.toString());
+                JSONObject message = json.optJSONObject("message");
+
+                if (message != null && message.optBoolean("success", false)) {
+                    return message.optJSONObject("config");
+                }
+
+                Log.e(TAG, "Firebase config error: " + (message != null ? message.optString("message") : "Unknown"));
+            }
+
+            conn.disconnect();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to fetch Firebase config", e);
+        }
+        return null;
+    }
+
+    private void initializeFirebase(String projectId, String senderId, String apiKey, String appId) {
+        if (firebaseInitialized) {
+            Log.d(TAG, "Firebase already initialized");
+            return;
+        }
+
+        try {
+            // Check if default app already exists
+            try {
+                FirebaseApp existingApp = FirebaseApp.getInstance();
+                if (existingApp != null) {
+                    Log.d(TAG, "Firebase app already exists, deleting...");
+                    existingApp.delete();
+                }
+            } catch (IllegalStateException e) {
+                // No existing app, continue
+            }
+
+            FirebaseOptions options = new FirebaseOptions.Builder()
+                    .setProjectId(projectId)
+                    .setGcmSenderId(senderId)
+                    .setApiKey(apiKey)
+                    .setApplicationId(appId)
+                    .build();
+
+            FirebaseApp.initializeApp(this, options);
+            firebaseInitialized = true;
+            Log.d(TAG, "Firebase initialized with project: " + projectId);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to initialize Firebase", e);
+        }
     }
 
     private String login(String siteUrl, String username, String password) {

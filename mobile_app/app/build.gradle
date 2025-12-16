@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
-    id 'com.google.gms.google-services'
+    // Note: google-services plugin NOT used - Firebase is initialized dynamically at runtime
+    // This allows the app to work with ANY Firebase project configured on the Frappe site
 }
 
 android {

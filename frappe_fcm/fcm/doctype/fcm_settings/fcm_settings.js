@@ -45,6 +45,48 @@ frappe.ui.form.on("FCM Settings", {
                 }
             }
         });
+    },
+
+    parse_google_services_btn: function(frm) {
+        if (!frm.doc.google_services_json) {
+            frappe.msgprint({
+                title: __('Error'),
+                indicator: 'red',
+                message: __('Please paste the contents of google-services.json first')
+            });
+            return;
+        }
+
+        frappe.call({
+            method: 'frappe_fcm.fcm.doctype.fcm_settings.fcm_settings.parse_google_services_json',
+            freeze: true,
+            freeze_message: __('Parsing google-services.json...'),
+            callback: function(r) {
+                if (r.message) {
+                    if (r.message.success) {
+                        // Refresh form to show extracted values
+                        frm.reload_doc();
+
+                        frappe.msgprint({
+                            title: __('Success'),
+                            indicator: 'green',
+                            message: r.message.message + '<br><br>' +
+                                '<b>Extracted Values:</b><br>' +
+                                'Project ID: ' + r.message.project_id + '<br>' +
+                                'Sender ID: ' + r.message.sender_id + '<br>' +
+                                'App ID: ' + r.message.app_id + '<br><br>' +
+                                '<b>' + __('Mobile app can now fetch this configuration from your site!') + '</b>'
+                        });
+                    } else {
+                        frappe.msgprint({
+                            title: __('Error'),
+                            indicator: 'red',
+                            message: r.message.message
+                        });
+                    }
+                }
+            }
+        });
     }
 });
 

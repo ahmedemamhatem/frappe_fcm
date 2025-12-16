@@ -107,6 +107,110 @@ def test_fcm_connection():
 
 
 @frappe.whitelist()
+def parse_google_services_json():
+    """
+    Parse google-services.json and extract FCM configuration values.
+    These values are needed for the mobile app to initialize Firebase dynamically.
+    """
+    settings = frappe.get_single("FCM Settings")
+
+    if not settings.google_services_json:
+        return {
+            "success": False,
+            "message": _("Please paste google-services.json content first")
+        }
+
+    try:
+        data = json.loads(settings.google_services_json)
+
+        # Extract project_info
+        project_info = data.get("project_info", {})
+        project_number = project_info.get("project_number", "")
+        project_id = project_info.get("project_id", "")
+
+        # Extract client info (first Android client)
+        clients = data.get("client", [])
+        if not clients:
+            return {
+                "success": False,
+                "message": _("No client configuration found in google-services.json")
+            }
+
+        client = clients[0]
+        client_info = client.get("client_info", {})
+        app_id = client_info.get("mobilesdk_app_id", "")
+
+        # Extract API key
+        api_keys = client.get("api_key", [])
+        api_key = api_keys[0].get("current_key", "") if api_keys else ""
+
+        # Update settings
+        frappe.db.set_value("FCM Settings", "FCM Settings", {
+            "fcm_sender_id": project_number,
+            "fcm_api_key": api_key,
+            "fcm_app_id": app_id,
+            "fcm_project_id": project_id
+        })
+        frappe.db.commit()
+
+        return {
+            "success": True,
+            "message": _("Configuration extracted successfully!"),
+            "sender_id": project_number,
+            "api_key": api_key,
+            "app_id": app_id,
+            "project_id": project_id
+        }
+
+    except json.JSONDecodeError:
+        return {
+            "success": False,
+            "message": _("Invalid JSON format in google-services.json")
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": _("Error parsing google-services.json: {0}").format(str(e))
+        }
+
+
+@frappe.whitelist(allow_guest=True)
+def get_firebase_config():
+    """
+    API endpoint for mobile app to fetch Firebase configuration.
+    This allows the universal mobile app to initialize Firebase dynamically
+    based on each site's configuration.
+
+    Returns the values needed to create a FirebaseOptions object in the app.
+    """
+    settings = frappe.get_single("FCM Settings")
+
+    if not settings.fcm_enabled:
+        return {
+            "success": False,
+            "message": "FCM is not enabled on this site"
+        }
+
+    # Check if mobile app config is available
+    if not settings.fcm_sender_id or not settings.fcm_api_key or not settings.fcm_app_id:
+        return {
+            "success": False,
+            "message": "Mobile app configuration not set. Admin needs to configure google-services.json in FCM Settings."
+        }
+
+    return {
+        "success": True,
+        "config": {
+            "project_id": settings.fcm_project_id,
+            "sender_id": settings.fcm_sender_id,
+            "api_key": settings.fcm_api_key,
+            "app_id": settings.fcm_app_id,
+            "storage_bucket": f"{settings.fcm_project_id}.appspot.com"
+        }
+    }
+
+
+@frappe.whitelist()
 def send_test_notification():
     """
     Send a test notification to all registered devices
